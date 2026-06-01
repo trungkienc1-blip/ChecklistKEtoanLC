@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Checklist Cuối Tháng</title>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600&family=Sora:wght@600&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f4f3ef;--card:#fff;--s2:#f0efe9;--bd:#e2e0d8;
+  --t1:#1a1916;--t2:#6b6960;--t3:#a8a69e;
+  --gr:#2d6a4f;--grl:#d8f3dc;--grd:#27500A;
+  --re:#b5451b;--rel:#fdebd6;
+  --bl:#1a4d7a;--bll:#dceefb;
+  --am:#92620a;--aml:#fef3c7;
+}
+body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1);min-height:100vh}
+
+/* TOPBAR */
+.top{position:sticky;top:0;z-index:200;background:var(--card);border-bottom:1px solid var(--bd);height:52px;display:flex;align-items:center;padding:0 1.25rem;gap:8px}
+.logo{font-family:'Sora',sans-serif;font-size:15px;font-weight:600;flex:1}
+.logo b{color:var(--gr)}
+.topbtn{display:inline-flex;align-items:center;gap:5px;font-family:'Be Vietnam Pro',sans-serif;font-size:12px;padding:5px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--card);color:var(--t2);cursor:pointer;white-space:nowrap;transition:background .12s}
+.topbtn:hover{background:var(--s2)}
+.topbtn.admin-on{background:var(--grl);border-color:var(--gr);color:var(--grd)}
+
+/* WHO AM I BAR */
+.who-bar{background:var(--card);border-bottom:1px solid var(--bd);padding:8px 1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.who-label{font-size:13px;color:var(--t2)}
+.who-pills{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.who-pill{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t2);transition:all .12s;font-family:'Be Vietnam Pro',sans-serif}
+.who-pill:hover{border-color:var(--gr);color:var(--grd)}
+.who-pill.me{background:var(--gr);color:#fff;border-color:var(--gr)}
+.who-hint{font-size:11px;color:var(--t3)}
+
+/* MAIN */
+.wrap{max-width:880px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
+
+/* PROGRESS */
+.pcard{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:1.1rem 1.4rem;margin-bottom:1rem}
+.stats{display:flex;gap:1.5rem;margin-bottom:.75rem}
+.stat .n{font-family:'Sora',sans-serif;font-size:24px;font-weight:600;line-height:1}
+.stat .l{font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+.n.g{color:var(--gr)}.n.r{color:var(--re)}.n.b{color:var(--bl)}
+.bar-track{height:7px;background:var(--s2);border-radius:7px;overflow:hidden;margin-bottom:4px}
+.bar-fill{height:100%;background:var(--gr);border-radius:7px;transition:width .4s}
+.bar-lbl{font-size:12px;color:var(--t2)}
+
+/* TOOLBAR */
+.toolbar{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap;align-items:center}
+.fb{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--bd);background:var(--card);color:var(--t2);cursor:pointer;font-family:'Be Vietnam Pro',sans-serif}
+.fb:hover{background:var(--s2)}
+.fb.on{background:var(--t1);color:#fff;border-color:var(--t1)}
+.view-sel{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:5px 8px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--t1);cursor:pointer;outline:none;margin-left:auto}
+
+/* SECTION CARDS */
+.sec{background:var(--card);border:1px solid var(--bd);border-radius:10px;overflow:hidden;margin-bottom:.8rem}
+.sec-h{display:flex;align-items:center;gap:8px;padding:.65rem 1rem;background:var(--s2);border-bottom:1px solid var(--bd)}
+.sec-icon{font-size:15px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--bd);border-radius:5px}
+.sec-name{font-size:13px;font-weight:500;flex:1}
+.sec-cnt{font-size:11px;color:var(--t3)}
+.sec-bar{height:3px;background:var(--bd)}.sec-barf{height:100%;background:var(--gr);transition:width .4s}
+.trow{display:grid;grid-template-columns:20px minmax(0,1fr) auto auto auto;align-items:center;gap:8px;padding:9px 1rem;border-bottom:1px solid var(--bd);transition:background .1s}
+.trow.clickable{cursor:pointer}
+.trow.clickable:hover{background:var(--s2)}
+.trow.locked{opacity:.7;cursor:default}
+.trow:last-child{border-bottom:none}
+.trow.done .tname{text-decoration:line-through;color:var(--t3)}
+.cb{width:18px;height:18px;border-radius:4px;border:1.5px solid var(--bd);display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);transition:all .15s}
+.cb.on{background:var(--gr);border-color:var(--gr)}
+.cb.on::after{content:'✓';color:#fff;font-size:11px;font-weight:600}
+.cb.locked-cb{background:var(--s2);border-color:var(--bd)}
+.tname{font-size:13px}
+.tperson{font-size:11px;color:var(--t3);white-space:nowrap}
+.dtag{font-size:11px;padding:2px 8px;border-radius:20px;white-space:nowrap;font-weight:500}
+.dt-set{background:var(--bll);color:var(--bl)}
+.dt-none{background:var(--s2);color:var(--t3);border:1px dashed var(--bd)}
+.stamp-ok{font-size:11px;color:var(--gr);white-space:nowrap}
+.stamp-late{font-size:11px;color:var(--re);font-weight:500;white-space:nowrap}
+.lock-ico{font-size:11px;color:var(--t3)}
+
+/* OVERLAY PANEL */
+.ov{position:fixed;inset:0;z-index:500;background:rgba(26,25,22,.5);display:none;justify-content:flex-end}
+.ov.open{display:flex}
+.panel{background:var(--card);width:500px;max-width:100vw;height:100vh;overflow-y:auto;border-left:1px solid var(--bd);display:flex;flex-direction:column}
+.ph{display:flex;align-items:center;gap:8px;padding:1rem 1.25rem;border-bottom:1px solid var(--bd);position:sticky;top:0;background:var(--card);z-index:10}
+.ph h3{font-family:'Sora',sans-serif;font-size:15px;flex:1}
+.ph-x{background:none;border:none;font-size:18px;cursor:pointer;color:var(--t2);width:28px;height:28px;border-radius:5px;display:flex;align-items:center;justify-content:center}
+.ph-x:hover{background:var(--s2)}
+.pbody{flex:1;padding:1.25rem;overflow-y:auto}
+.pfoot{padding:1rem 1.25rem;border-top:1px solid var(--bd);display:flex;gap:8px;justify-content:flex-end;background:var(--card)}
+
+.plabel{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:500;margin-bottom:.5rem}
+.psec{margin-bottom:1.5rem}
+.mpills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:.75rem}
+.mpill{font-size:12px;padding:5px 13px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;font-family:'Be Vietnam Pro',sans-serif;color:var(--t2);transition:all .12s}
+.mpill:hover{border-color:var(--gr);color:var(--grd)}
+.mpill.active{background:var(--gr);color:#fff;border-color:var(--gr)}
+.mpill.hasdata{border-color:var(--gr);color:var(--grd)}
+.add-row{display:flex;gap:6px}
+.add-row input{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:7px 10px;border-radius:6px;border:1px solid var(--bd);flex:1;outline:none;color:var(--t1);background:var(--card)}
+.add-row input:focus{border-color:var(--gr)}
+.add-row button{font-family:'Be Vietnam Pro',sans-serif;font-size:12px;padding:7px 13px;border-radius:6px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t2)}
+.grp-block{margin-bottom:10px;background:var(--s2);border:1px solid var(--bd);border-radius:8px;overflow:hidden}
+.grp-hd{display:flex;align-items:center;gap:8px;padding:.6rem .9rem;background:var(--card);border-bottom:1px solid var(--bd)}
+.grp-icon{font-size:14px}.grp-name{font-size:13px;font-weight:500;flex:1}
+.grp-dl-wrap{display:flex;align-items:center;gap:6px;padding:.6rem .9rem;border-bottom:1px solid var(--bd);background:var(--card)}
+.grp-dl-wrap label{font-size:12px;color:var(--t2);white-space:nowrap}
+.grp-date{font-family:'Be Vietnam Pro',sans-serif;font-size:12px;padding:4px 8px;border-radius:5px;border:1px solid var(--bd);background:var(--s2);color:var(--t1);outline:none;cursor:pointer;flex:1}
+.grp-date:focus{border-color:var(--gr)}
+.apply-btn{font-size:11px;padding:4px 10px;border-radius:20px;border:none;background:var(--gr);color:#fff;cursor:pointer;white-space:nowrap}
+.task-dl-list{padding:.4rem .9rem .6rem}
+.task-dl-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--bd)}
+.task-dl-row:last-child{border-bottom:none}
+.task-dl-info{flex:1;min-width:0}
+.task-dl-name{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.task-dl-person{font-size:11px;color:var(--t3)}
+.task-dl-input{font-family:'Be Vietnam Pro',sans-serif;font-size:12px;padding:3px 7px;border-radius:5px;border:1px solid var(--bd);background:var(--card);color:var(--t1);outline:none;width:128px;cursor:pointer}
+.task-dl-input:focus{border-color:var(--gr)}
+.task-dl-input.custom{border-color:var(--am);background:var(--aml)}
+
+.btn-ghost{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:8px 18px;border-radius:7px;border:1px solid var(--bd);background:transparent;color:var(--t2);cursor:pointer}
+.btn-save{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:8px 20px;border-radius:7px;border:none;background:var(--gr);color:#fff;cursor:pointer;font-weight:500}
+.btn-save:hover{opacity:.88}
+
+/* PIN MODAL */
+.pin-bg{position:fixed;inset:0;z-index:900;background:rgba(26,25,22,.6);display:none;align-items:center;justify-content:center}
+.pin-bg.open{display:flex}
+.pin-card{background:var(--card);border-radius:14px;padding:2rem;width:320px;text-align:center}
+.pin-card h4{font-family:'Sora',sans-serif;font-size:16px;margin-bottom:.4rem}
+.pin-card p{font-size:13px;color:var(--t2);margin-bottom:1.25rem}
+.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:1.25rem}
+.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--bd);background:var(--s2);transition:background .15s}
+.pin-dot.filled{background:var(--gr);border-color:var(--gr)}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.75rem}
+.pin-key{font-family:'Sora',sans-serif;font-size:18px;font-weight:600;padding:12px;border-radius:8px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t1);transition:background .1s}
+.pin-key:hover{background:var(--bd)}
+.pin-key:active{background:var(--gr);color:#fff;border-color:var(--gr)}
+.pin-clear{font-size:13px;color:var(--re);background:none;border:none;cursor:pointer;margin-top:4px;font-family:'Be Vietnam Pro',sans-serif}
+.pin-err{font-size:12px;color:var(--re);min-height:18px;margin-top:6px}
+
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--t1);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+.empty{text-align:center;padding:3rem;color:var(--t3);font-size:13px}
+
+@media(max-width:600px){
+  .wrap{padding:1rem .75rem 4rem}
+  .trow{grid-template-columns:20px minmax(0,1fr) auto}
+  .tperson,.dtag,.stamp-ok,.stamp-late,.lock-ico{display:none}
+  .panel{width:100vw}
+}
+</style>
+</head>
+<body>
+
+<!-- PIN MODAL -->
+<div class="pin-bg" id="pin-bg">
+  <div class="pin-card">
+    <h4 id="pin-card-title">🔐 Nhập mã PIN quản trị</h4>
+    <p id="pin-card-sub">Chỉ quản lý mới có thể chỉnh deadline</p>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="d0"></div>
+      <div class="pin-dot" id="d1"></div>
+      <div class="pin-dot" id="d2"></div>
+      <div class="pin-dot" id="d3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" data-n="1">1</button>
+      <button class="pin-key" data-n="2">2</button>
+      <button class="pin-key" data-n="3">3</button>
+      <button class="pin-key" data-n="4">4</button>
+      <button class="pin-key" data-n="5">5</button>
+      <button class="pin-key" data-n="6">6</button>
+      <button class="pin-key" data-n="7">7</button>
+      <button class="pin-key" data-n="8">8</button>
+      <button class="pin-key" data-n="9">9</button>
+      <button class="pin-key" data-n="←" id="pin-del" style="font-size:16px">←</button>
+      <button class="pin-key" data-n="0">0</button>
+      <button class="pin-key" id="pin-cancel-key" style="font-size:12px;color:var(--t2)">Huỷ</button>
+    </div>
+    <div class="pin-err" id="pin-err"></div>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="top">
+  <div class="logo">Kế Toán <b>Checklist</b></div>
+  <span id="lbl-month" style="font-size:12px;color:var(--t2);padding:4px 10px;background:var(--s2);border-radius:20px;border:1px solid var(--bd)">Tháng --/----</span>
+  <button class="topbtn" id="btn-hist">📊 Lịch sử</button>
+  <button class="topbtn" id="btn-panel">🔒 Deadline</button>
+</div>
+
+<!-- WHO AM I -->
+<div class="who-bar">
+  <span class="who-label">Bạn là:</span>
+  <div class="who-pills" id="who-pills"></div>
+  <span class="who-hint" id="who-hint">← chọn tên rồi nhập PIN để cập nhật tiến độ</span>
+</div>
+
+<!-- MAIN -->
+<div class="wrap">
+  <div class="pcard">
+    <div class="stats">
+      <div class="stat"><div class="n g" id="n-done">0</div><div class="l">Xong</div></div>
+      <div class="stat"><div class="n r" id="n-late">0</div><div class="l">Trễ hạn</div></div>
+      <div class="stat"><div class="n b" id="n-pend">0</div><div class="l">Chờ</div></div>
+      <div class="stat"><div class="n"   id="n-total">0</div><div class="l">Tổng</div></div>
+    </div>
+    <div class="bar-track"><div class="bar-fill" id="bar" style="width:0%"></div></div>
+    <div class="bar-lbl" id="bar-lbl">0% hoàn thành</div>
+  </div>
+  <div class="toolbar">
+    <button class="fb on" data-f="all">Tất cả</button>
+    <button class="fb" data-f="mine">Của tôi</button>
+    <button class="fb" data-f="pending">Chưa xong</button>
+    <button class="fb" data-f="done">Hoàn thành</button>
+    <button class="fb" data-f="late">Trễ hạn</button>
+    <select class="view-sel" id="view-sel">
+      <option value="all">Xem tất cả nhân viên</option>
+    </select>
+  </div>
+  <div id="list"></div>
+</div>
+
+<!-- DEADLINE PANEL -->
+<div class="ov" id="ov">
+  <div class="panel">
+    <div class="ph">
+      <h3>⚙️ Quản lý tháng & Deadline</h3>
+      <button class="ph-x" id="btn-close-panel">✕</button>
+    </div>
+    <div class="pbody" id="panel-body"></div>
+    <div class="pfoot">
+      <button class="btn-ghost" id="btn-cancel">Đóng</button>
+      <button class="btn-save" id="btn-save-dl">💾 Lưu deadline</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY PANEL -->
+<div class="ov" id="ov-hist">
+  <div class="panel">
+    <div class="ph">
+      <h3>📊 Lịch sử hoàn thành</h3>
+      <button class="ph-x" id="btn-close-hist">✕</button>
+    </div>
+    <div class="pbody" id="hist-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+// ════════════════════════════════════════════════
+// ⚙️  CÀI ĐẶT — chỉnh 2 dòng này
+// ════════════════════════════════════════════════
+const ADMIN_PIN  = '1234';   // ← PIN của quản lý (sửa deadline + tick mọi task)
+const DB_URL     = 'https://list-todo-af-long-chau-default-rtdb.asia-southeast1.firebasedatabase.app';
+
+// ── PIN từng nhân viên — đổi số PIN tuỳ ý ──────────────
+const MEMBER_PINS = {
+  'Khangth':  '1001',
+  'Huongdb':  '1002',
+  'Dinhvu':   '1003',
+  'Hoaitx':   '1004',
+  'Hanntn':   '1005',
+  'Tienpng':  '1006',
+  'Haoln11':  '1007',
+  'Thydu':    '1008',
+  'Dungdp':   '1009',
+  'Toantp':   '1010',
+  'Ngoclh':   '1011',
+  'Trangntm': '1012',
+};
+// ────────────────────────────────────────────────────────
+// ════════════════════════════════════════════════
+
+const TASKS = [
+  {id:1,  g:"CSVC + Xây dựng",                              ico:"🏗️", p:"Khangth",  n:"Đối soát chi phí chia sẻ với Fshop HCM"},
+  {id:2,  g:"CSVC + Xây dựng",                              ico:"🏗️", p:"Huongdb",  n:"Trích + giải trình xây dựng"},
+  {id:3,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Dinhvu",   n:"Thuế + thuê + 1422 thuê nhà + điện tay Miền Bắc"},
+  {id:4,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Hoaitx",   n:"Thuế + thuê + 1422 thuê nhà HNI"},
+  {id:5,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Hoaitx",   n:"Thuế + thuê + 1422 thuê nhà + điện tay HCM"},
+  {id:6,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Hanntn",   n:"Thuế + thuê + 1422 thuê nhà + điện tay Miền Trung"},
+  {id:7,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Hanntn",   n:"Thuế + thuê + 1422 thuê nhà + điện tay Miền Đông"},
+  {id:8,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Hanntn",   n:"Thuế + thuê + 1422 thuê nhà + điện tay Miền Tây"},
+  {id:9,  g:"MKT",                                          ico:"📣", p:"Tienpng",  n:"Trích Marketing + 1422 MKT"},
+  {id:10, g:"Internet & FCI",                               ico:"🌐", p:"Haoln11",  n:"Trích + giải trình internet"},
+  {id:11, g:"Internet & FCI",                               ico:"🌐", p:"Thydu",    n:"Trích chi phí FCI"},
+  {id:12, g:"Thanh toán",                                   ico:"💳", p:"Dungdp",   n:"Check đối soát với Fshop HCM + DAG"},
+  {id:13, g:"Thanh toán",                                   ico:"💳", p:"Toantp",   n:"Chốt sổ ngân hàng VTB 8932"},
+  {id:14, g:"Thanh toán",                                   ico:"💳", p:"Ngoclh",   n:"Check đối soát với Fshop HNI"},
+  {id:15, g:"Thanh toán",                                   ico:"💳", p:"Ngoclh",   n:"Chốt sổ thẻ TPB 304"},
+  {id:16, g:"Thanh toán",                                   ico:"💳", p:"Toantp",   n:"Chốt sổ ngân hàng VTB 2043 (điện tự động)"},
+  {id:17, g:"Lead",                                         ico:"👑", p:"Trangntm", n:"Check sổ 1423, 1421, 2422"},
+  {id:18, g:"Lead",                                         ico:"👑", p:"Trangntm", n:"1422 shop all vùng"},
+  {id:19, g:"Lead",                                         ico:"👑", p:"Toantp",   n:"View điện toàn quốc"},
+  {id:20, g:"Lead",                                         ico:"👑", p:"Toantp",   n:"View chi phí all"},
+  {id:21, g:"Lead",                                         ico:"👑", p:"Toantp",   n:"Check sổ 3311, 33888, 3312, 1411"},
+];
+const GROUPS  = [...new Set(TASKS.map(t=>t.g))];
+const PERSONS = [...new Set(TASKS.map(t=>t.p))].sort();
+
+// ── FIREBASE ─────────────────────────────────────────────
+const db = getDatabase(initializeApp({databaseURL:DB_URL},'keto5'));
+
+// ── STATE ─────────────────────────────────────────────────
+let FB       = {};
+let curMonth = '';
+let meUser   = '';  // always require PIN on fresh load
+let curFilter= 'all';
+let viewPerson = 'all';
+let isAdmin  = false;
+let panelDLs = {};
+
+// ── KEY HELPERS ───────────────────────────────────────────
+const mkey    = l  => l.replace(/\//g,'-');
+const tkey    = id => 't'+id;
+const mo      = () => (FB.months||{})[mkey(curMonth)] || {label:curMonth,deadlines:{},tasks:{}};
+const getDL   = id => ((mo().deadlines)||{})[tkey(id)] || '';
+const getDone = id => ((mo().tasks)||{})[tkey(id)] || null;
+const diffDays= (dl,dn) => { if(!dl||!dn) return null; return Math.round((new Date(dn)-new Date(dl))/864e5); };
+const fmtDate = v  => { if(!v) return ''; const[,m,d]=v.split('-'); return d+'/'+m; };
+const todayStr= () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
+const nowStr  = () => { const d=new Date(); return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); };
+
+// ── FIREBASE LISTENER ─────────────────────────────────────
+onValue(ref(db,'v3'), async snap => {
+  FB = snap.val() || {};
+  if (!curMonth) {
+    const d = new Date();
+    const thisMonth = (d.getMonth()+1)+'/'+d.getFullYear();
+    const snap = await get(ref(db,'v3/config/activeMonth'));
+    curMonth = (snap.exists() ? snap.val() : null) || thisMonth;
+    if (!(FB.months && FB.months[mkey(curMonth)])) {
+      set(ref(db,'v3/months/'+mkey(curMonth)), {label:curMonth,deadlines:{},tasks:{}});
+    }
+  }
+  document.getElementById('lbl-month').textContent = 'Tháng '+curMonth;
+  renderWho();
+  renderViewSel();
+  renderList();
+});
+
+// ── WHO AM I ─────────────────────────────────────────────
+function renderWho() {
+  const container = document.getElementById('who-pills');
+  container.innerHTML = PERSONS.map(p =>
+    `<button class="who-pill ${p===meUser?'me':''}" data-p="${p}">${p}</button>`
+  ).join('');
+  container.querySelectorAll('.who-pill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const selectedName = btn.dataset.p;
+      if (selectedName === meUser) {
+        // đã đăng nhập rồi, click lại = đăng xuất
+        meUser = '';
+        localStorage.removeItem('keto_me');
+        isAdmin = false;
+        renderWho();
+        renderList();
+        document.getElementById('who-hint').textContent = '← chọn tên rồi nhập PIN để cập nhật tiến độ';
+        return;
+      }
+      openPin(() => {}, selectedName);
+    });
+  });
+  // update panel button
+  document.getElementById('btn-panel').className = 'topbtn' + (isAdmin ? ' admin-on' : '');
+  document.getElementById('btn-panel').textContent = isAdmin ? '⚙️ Deadline (Admin)' : '🔒 Deadline';
+}
+
+// ── VIEW SELECTOR (admin: xem theo người) ────────────────
+function renderViewSel() {
+  const sel = document.getElementById('view-sel');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">Xem tất cả nhân viên</option>' +
+    PERSONS.map(p => `<option value="${p}">Xem: ${p}</option>`).join('');
+  sel.value = prev;
+}
+
+// ── RENDER LIST ───────────────────────────────────────────
+function renderList() {
+  const total = TASKS.length;
+  const nDone = TASKS.filter(t=>getDone(t.id)).length;
+  const nLate = TASKS.filter(t=>{ const dn=getDone(t.id),dl=getDL(t.id); return dn&&dl&&diffDays(dl,dn.date)>0; }).length;
+  const pct   = Math.round(nDone/total*100);
+  document.getElementById('n-done').textContent  = nDone;
+  document.getElementById('n-late').textContent  = nLate;
+  document.getElementById('n-pend').textContent  = total-nDone;
+  document.getElementById('n-total').textContent = total;
+  document.getElementById('bar').style.width     = pct+'%';
+  document.getElementById('bar-lbl').textContent = pct+'% hoàn thành — Tháng '+curMonth;
+
+  let tasks = TASKS;
+  // view filter (admin feature)
+  if (viewPerson !== 'all') tasks = tasks.filter(t => t.p === viewPerson);
+  // tab filter
+  if (curFilter === 'mine')    tasks = tasks.filter(t => t.p === meUser);
+  if (curFilter === 'done')    tasks = tasks.filter(t => getDone(t.id));
+  if (curFilter === 'pending') tasks = tasks.filter(t => !getDone(t.id));
+  if (curFilter === 'late')    tasks = tasks.filter(t => { const dn=getDone(t.id),dl=getDL(t.id); return dn&&dl&&diffDays(dl,dn.date)>0; });
+
+  const vg = GROUPS.filter(g => tasks.some(t=>t.g===g));
+  if (!tasks.length) { document.getElementById('list').innerHTML='<div class="empty">Không có task nào.</div>'; return; }
+
+  document.getElementById('list').innerHTML = vg.map(g => {
+    const gt  = tasks.filter(t=>t.g===g);
+    const ag  = TASKS.filter(t=>t.g===g);
+    const gd  = ag.filter(t=>getDone(t.id)).length;
+    const gp  = Math.round(gd/ag.length*100);
+
+    return `<div class="sec">
+      <div class="sec-h">
+        <div class="sec-icon">${gt[0].ico}</div>
+        <span class="sec-name">${g}</span>
+        <span class="sec-cnt">${gd}/${ag.length}</span>
+      </div>
+      <div class="sec-bar"><div class="sec-barf" style="width:${gp}%"></div></div>
+      ${gt.map(t => {
+        const dn     = getDone(t.id);
+        const dl     = getDL(t.id);
+        const isDone = !!dn;
+        const diff   = dn&&dl ? diffDays(dl,dn.date) : null;
+        const isMine = t.p === meUser;
+        const canTick= isMine && !isAdmin;  // members can only tick their own
+        const adminTick = isAdmin;          // admin can tick anything
+
+        const dlTag = dl
+          ? `<span class="dtag dt-set">📅 ${fmtDate(dl)}</span>`
+          : `<span class="dtag dt-none">Chưa có DL</span>`;
+
+        let stamp = '';
+        if (dn) {
+          stamp = (diff!==null&&diff>0)
+            ? `<span class="stamp-late">⚠ Trễ ${diff} ngày</span>`
+            : `<span class="stamp-ok">✓ ${fmtDate(dn.date)} ${dn.time} · ${dn.by}</span>`;
+        }
+
+        const isClickable = canTick || adminTick;
+        const lockIcon = (!isClickable && !isDone) ? `<span class="lock-ico">🔒</span>` : '';
+
+        return `<div class="trow ${isDone?'done':''} ${isClickable?'clickable':'locked'}" data-id="${t.id}" data-mine="${isMine?1:0}">
+          <div class="cb ${isDone?'on':''} ${!isClickable?'locked-cb':''}"></div>
+          <span class="tname">${t.n}</span>
+          <span class="tperson">${t.p}</span>
+          ${dlTag}${stamp}${lockIcon}
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('');
+
+  // bind click
+  document.querySelectorAll('.trow.clickable[data-id]').forEach(row => {
+    row.addEventListener('click', () => toggleTask(Number(row.dataset.id)));
+  });
+  // locked row: show hint
+  document.querySelectorAll('.trow.locked[data-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      if (!meUser) showToast('Vui lòng chọn tên của bạn trước ↑');
+      else showToast('Bạn chỉ có thể tick task của chính mình');
+    });
+  });
+}
+
+// ── TOGGLE TASK ───────────────────────────────────────────
+async function toggleTask(id) {
+  const path = 'v3/months/'+mkey(curMonth)+'/tasks/'+tkey(id);
+  if (getDone(id)) {
+    await remove(ref(db, path));
+  } else {
+    await set(ref(db, path), {
+      by:   meUser || TASKS.find(t=>t.id===id).p,
+      date: todayStr(),
+      time: nowStr()
+    });
+  }
+  showToast('Đã cập nhật ✓');
+}
+
+// ── FILTER BUTTONS ────────────────────────────────────────
+document.querySelectorAll('.fb').forEach(b => {
+  b.addEventListener('click', () => {
+    curFilter = b.dataset.f;
+    document.querySelectorAll('.fb').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    renderList();
+  });
+});
+document.getElementById('view-sel').addEventListener('change', e => {
+  viewPerson = e.target.value; renderList();
+});
+
+// ── PIN SYSTEM ────────────────────────────────────────────
+let pinEntry = '';
+
+function openPin(onSuccess, memberName) {
+  pinEntry = '';
+  updatePinDots();
+  document.getElementById('pin-err').textContent = '';
+  window._pinMember  = memberName || null;  // if set: validating member login
+  window._pinSuccess = onSuccess;
+  const card = document.getElementById('pin-card-title');
+  const sub  = document.getElementById('pin-card-sub');
+  if (memberName) {
+    card.textContent = `🔐 Xin chào ${memberName}`;
+    sub.textContent  = 'Nhập PIN của bạn để cập nhật tiến độ';
+  } else {
+    card.textContent = '🔐 Nhập mã PIN quản trị';
+    sub.textContent  = 'Chỉ quản lý mới có thể chỉnh deadline';
+  }
+  document.getElementById('pin-bg').classList.add('open');
+}
+
+function closePinModal() {
+  pinEntry = '';
+  document.getElementById('pin-bg').classList.remove('open');
+}
+
+function updatePinDots() {
+  for (let i=0;i<4;i++) {
+    document.getElementById('d'+i).classList.toggle('filled', i < pinEntry.length);
+  }
+}
+
+document.querySelectorAll('.pin-key[data-n]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const n = btn.dataset.n;
+    if (n === '←') {
+      pinEntry = pinEntry.slice(0,-1);
+      updatePinDots();
+    } else if (n === 'Huỷ') {
+      closePinModal();
+    } else {
+      if (pinEntry.length >= 4) return;
+      pinEntry += n;
+      updatePinDots();
+      if (pinEntry.length === 4) {
+        setTimeout(() => {
+          const memberName = window._pinMember;
+          if (memberName) {
+            // member login: check member PIN
+            const correctPin = MEMBER_PINS[memberName];
+            if (pinEntry === correctPin) {
+              meUser = memberName;
+              localStorage.setItem('keto_me', memberName);
+              closePinModal();
+              renderWho();
+              renderList();
+              document.getElementById('who-hint').textContent = `Xin chào ${memberName}! Bạn có thể cập nhật tiến độ task của mình.`;
+              showToast(`✅ Đã đăng nhập: ${memberName}`);
+              if (window._pinSuccess) window._pinSuccess();
+            } else {
+              document.getElementById('pin-err').textContent = 'Sai PIN, thử lại';
+              pinEntry = '';
+              updatePinDots();
+            }
+          } else {
+            // admin login
+            if (pinEntry === ADMIN_PIN) {
+              isAdmin = true;
+              closePinModal();
+              renderWho();
+              renderList();
+              showToast('✅ Chế độ admin đã bật');
+              if (window._pinSuccess) window._pinSuccess();
+            } else {
+              document.getElementById('pin-err').textContent = 'Sai PIN, thử lại';
+              pinEntry = '';
+              updatePinDots();
+            }
+          }
+        }, 120);
+      }
+    }
+  });
+});
+document.getElementById('pin-cancel-key').addEventListener('click', closePinModal);
+
+// ── DEADLINE PANEL ────────────────────────────────────────
+document.getElementById('btn-panel').addEventListener('click', () => {
+  if (isAdmin) {
+    openPanel();
+  } else {
+    openPin(() => openPanel());
+  }
+});
+document.getElementById('btn-close-panel').addEventListener('click', closePanel);
+document.getElementById('btn-cancel').addEventListener('click', closePanel);
+document.getElementById('ov').addEventListener('click', e => { if(e.target===e.currentTarget) closePanel(); });
+
+function openPanel() {
+  panelDLs = JSON.parse(JSON.stringify((mo().deadlines)||{}));
+  renderPanel();
+  document.getElementById('ov').classList.add('open');
+}
+function closePanel() { document.getElementById('ov').classList.remove('open'); }
+
+function renderPanel() {
+  const allMonths = FB.months ? Object.values(FB.months) : [];
+  if (!allMonths.find(m=>m.label===curMonth)) allMonths.push({label:curMonth,deadlines:{},tasks:{}});
+  allMonths.sort((a,b)=>{
+    const [am,ay]=a.label.split('/').map(Number),[bm,by]=b.label.split('/').map(Number);
+    return (ay*12+am)-(by*12+bm);
+  });
+
+  const pillsHtml = allMonths.map(m => {
+    const hasTasks = m.tasks && Object.keys(m.tasks).length>0;
+    const isActive = m.label === curMonth;
+    return `<button class="mpill ${isActive?'active':''} ${hasTasks&&!isActive?'hasdata':''}" data-mlabel="${m.label}">${m.label}${hasTasks?' ✓':''}</button>`;
+  }).join('');
+
+  const groupsHtml = GROUPS.map((g,gi) => {
+    const gtasks = TASKS.filter(t=>t.g===g);
+    const gval   = panelDLs['_g'+gi]||'';
+    const taskRows = gtasks.map(t => {
+      const val = panelDLs[tkey(t.id)]||'';
+      const isCustom = gval && val && val !== gval;
+      return `<div class="task-dl-row">
+        <div class="task-dl-info">
+          <div class="task-dl-name">${t.n}</div>
+          <div class="task-dl-person">${t.p}</div>
+        </div>
+        <input class="task-dl-input ${isCustom?'custom':''}" type="date" data-tid="${t.id}" data-gi="${gi}" value="${val}"/>
+      </div>`;
+    }).join('');
+
+    return `<div class="grp-block">
+      <div class="grp-hd">
+        <span class="grp-icon">${gtasks[0].ico}</span>
+        <span class="grp-name">${g}</span>
+      </div>
+      <div class="grp-dl-wrap">
+        <label>Deadline nhóm:</label>
+        <input type="date" class="grp-date" data-gi="${gi}" value="${gval}"/>
+        <button class="apply-btn" data-gi="${gi}">Áp dụng nhóm</button>
+      </div>
+      <div class="task-dl-list">${taskRows}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('panel-body').innerHTML = `
+    <div class="psec">
+      <div class="plabel">Chọn tháng</div>
+      <div class="mpills" id="mpills">${pillsHtml}</div>
+      <div class="add-row">
+        <input type="text" id="inp-nm" placeholder="Thêm tháng mới, VD: 8/2026"/>
+        <button id="btn-add">+ Thêm</button>
+      </div>
+    </div>
+    <div class="psec">
+      <div class="plabel">Deadline tháng ${curMonth}</div>
+      <div id="grp-blocks">${groupsHtml}</div>
+    </div>`;
+
+  bindPanelEvents();
+}
+
+function bindPanelEvents() {
+  // month pills
+  document.querySelectorAll('.mpill[data-mlabel]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const label = btn.dataset.mlabel;
+      curMonth = label;
+      set(ref(db,'v3/config/activeMonth'), label);
+      if (!(FB.months&&FB.months[mkey(label)])) {
+        set(ref(db,'v3/months/'+mkey(label)), {label,deadlines:{},tasks:{}});
+      }
+      panelDLs = JSON.parse(JSON.stringify(((FB.months||{})[mkey(label)]||{}).deadlines||{}));
+      document.getElementById('lbl-month').textContent = 'Tháng '+label;
+      renderList();
+      // update pills active state
+      document.querySelectorAll('.mpill[data-mlabel]').forEach(p=>{
+        p.classList.toggle('active', p.dataset.mlabel===label);
+      });
+      // re-render deadline rows only
+      document.getElementById('grp-blocks').innerHTML = GROUPS.map((g,gi)=>{
+        const gtasks=TASKS.filter(t=>t.g===g);
+        const gval=panelDLs['_g'+gi]||'';
+        const taskRows=gtasks.map(t=>{
+          const val=panelDLs[tkey(t.id)]||'';
+          const isCustom=gval&&val&&val!==gval;
+          return `<div class="task-dl-row">
+            <div class="task-dl-info">
+              <div class="task-dl-name">${t.n}</div>
+              <div class="task-dl-person">${t.p}</div>
+            </div>
+            <input class="task-dl-input ${isCustom?'custom':''}" type="date" data-tid="${t.id}" data-gi="${gi}" value="${val}"/>
+          </div>`;
+        }).join('');
+        return `<div class="grp-block">
+          <div class="grp-hd"><span class="grp-icon">${gtasks[0].ico}</span><span class="grp-name">${g}</span></div>
+          <div class="grp-dl-wrap">
+            <label>Deadline nhóm:</label>
+            <input type="date" class="grp-date" data-gi="${gi}" value="${gval}"/>
+            <button class="apply-btn" data-gi="${gi}">Áp dụng nhóm</button>
+          </div>
+          <div class="task-dl-list">${taskRows}</div>
+        </div>`;
+      }).join('');
+      // document.querySelector('.plabel:nth-of-type(2)') -- update title
+      bindGroupAndTaskEvents();
+    });
+  });
+
+  // add month
+  document.getElementById('btn-add').addEventListener('click', () => {
+    const v = document.getElementById('inp-nm').value.trim(); if(!v) return;
+    const mk = mkey(v);
+    if (!(FB.months&&FB.months[mk])) set(ref(db,'v3/months/'+mk), {label:v,deadlines:{},tasks:{}});
+    curMonth = v;
+    set(ref(db,'v3/config/activeMonth'), v);
+    panelDLs = {};
+    document.getElementById('lbl-month').textContent = 'Tháng '+v;
+    renderList();
+    setTimeout(renderPanel, 400);
+  });
+
+  bindGroupAndTaskEvents();
+}
+
+function bindGroupAndTaskEvents() {
+  // apply group
+  document.querySelectorAll('.apply-btn[data-gi]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const gi  = Number(btn.dataset.gi);
+      const g   = GROUPS[gi];
+      const dateInp = btn.closest('.grp-block').querySelector('.grp-date');
+      const val = dateInp.value; if(!val){ dateInp.focus(); return; }
+      TASKS.filter(t=>t.g===g).forEach(t=>{ panelDLs[tkey(t.id)]=val; });
+      panelDLs['_g'+gi] = val;
+      btn.closest('.grp-block').querySelectorAll('.task-dl-input').forEach(inp=>{
+        inp.value=val; inp.classList.remove('custom');
+      });
+    });
+  });
+
+  // individual task input
+  document.querySelectorAll('.task-dl-input').forEach(inp => {
+    inp.addEventListener('change', () => {
+      const tid = inp.dataset.tid, gi = Number(inp.dataset.gi);
+      if (inp.value) panelDLs[tkey(tid)]=inp.value; else delete panelDLs[tkey(tid)];
+      const gval = panelDLs['_g'+gi];
+      inp.classList.toggle('custom', !!(gval && inp.value && inp.value!==gval));
+    });
+  });
+}
+
+// ── SAVE DEADLINES ────────────────────────────────────────
+document.getElementById('btn-save-dl').addEventListener('click', async () => {
+  document.querySelectorAll('.task-dl-input[data-tid]').forEach(inp => {
+    const k = tkey(inp.dataset.tid);
+    if (inp.value) panelDLs[k]=inp.value; else delete panelDLs[k];
+  });
+  const clean = {};
+  Object.entries(panelDLs).forEach(([k,v])=>{ if(!k.startsWith('_g')) clean[k]=v; });
+  await set(ref(db,'v3/months/'+mkey(curMonth)+'/deadlines'), clean);
+  showToast('Deadline đã lưu ✓');
+  closePanel();
+});
+
+// ── HISTORY ───────────────────────────────────────────────
+document.getElementById('btn-hist').addEventListener('click', () => {
+  const months = FB.months ? Object.values(FB.months) : [];
+  months.sort((a,b)=>{
+    const[am,ay]=a.label.split('/').map(Number),[bm,by]=b.label.split('/').map(Number);
+    return (by*12+bm)-(ay*12+am);
+  });
+  document.getElementById('hist-body').innerHTML = !months.length
+    ? '<p style="font-size:13px;color:var(--t3);padding:1rem 0">Chưa có dữ liệu.</p>'
+    : months.map(m=>{
+        const tasks=m.tasks||{},dls=m.deadlines||{};
+        const dc=Object.keys(tasks).length;
+        const lc=Object.entries(tasks).filter(([k,v])=>{ const dl=dls[k]; return dl&&v.date&&diffDays(dl,v.date)>0; }).length;
+        const pct=Math.round(dc/TASKS.length*100);
+        const isCur=m.label===curMonth;
+        return `<div style="margin-bottom:.85rem;padding:1rem;background:var(--s2);border-radius:8px;border:1px solid ${isCur?'var(--gr)':'var(--bd)'}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <span style="font-size:14px;font-weight:500">Tháng ${m.label}${isCur?' 🟢':''}</span>
+            <span style="font-size:12px;color:var(--t2)">${dc}/${TASKS.length} xong &nbsp;·&nbsp; <span style="color:${lc?'var(--re)':'var(--gr)'}">${lc} trễ</span></span>
+          </div>
+          <div style="height:5px;background:var(--bd);border-radius:5px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${lc?'var(--am)':'var(--gr)'};border-radius:5px"></div>
+          </div>
+          ${Object.keys(tasks).length ? `<div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:4px">${
+            Object.entries(tasks).map(([k,v])=>{
+              const tid=Number(k.slice(1));
+              const t=TASKS.find(x=>x.id===tid);
+              const dl=dls[k];
+              const d=dl&&v.date?diffDays(dl,v.date):null;
+              const late=d!==null&&d>0;
+              return `<span style="font-size:11px;padding:2px 8px;border-radius:20px;background:${late?'var(--rel)':'var(--grl)'};color:${late?'var(--re)':'var(--grd)'}">${t?t.p:'?'} ${late?'⚠':'✓'}</span>`;
+            }).join('')
+          }</div>` : ''}
+        </div>`;
+      }).join('');
+  document.getElementById('ov-hist').classList.add('open');
+});
+document.getElementById('btn-close-hist').addEventListener('click', ()=>document.getElementById('ov-hist').classList.remove('open'));
+document.getElementById('ov-hist').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.target.classList.remove('open'); });
+
+// ── TOAST ─────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
