@@ -28,11 +28,12 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
 /* WHO AM I BAR */
 .who-bar{background:var(--card);border-bottom:1px solid var(--bd);padding:8px 1.25rem;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .who-label{font-size:13px;color:var(--t2)}
-.who-pills{display:flex;gap:6px;flex-wrap:wrap;flex:1}
-.who-pill{font-size:12px;padding:4px 12px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t2);transition:all .12s;font-family:'Be Vietnam Pro',sans-serif}
-.who-pill:hover{border-color:var(--gr);color:var(--grd)}
-.who-pill.me{background:var(--gr);color:#fff;border-color:var(--gr)}
+.who-info{display:flex;align-items:center;gap:10px;flex:1}
+.who-name{font-size:13px;font-weight:500;color:var(--grd)}
+.who-email{font-size:11px;color:var(--t3)}
 .who-hint{font-size:11px;color:var(--t3)}
+.logout-btn{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t2);font-family:'Be Vietnam Pro',sans-serif}
+.logout-btn:hover{border-color:var(--re);color:var(--re)}
 
 /* MAIN */
 .wrap{max-width:880px;margin:0 auto;padding:1.25rem 1.25rem 4rem}
@@ -124,62 +125,67 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
 .btn-save{font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:8px 20px;border-radius:7px;border:none;background:var(--gr);color:#fff;cursor:pointer;font-weight:500}
 .btn-save:hover{opacity:.88}
 
-/* PIN MODAL */
-.pin-bg{position:fixed;inset:0;z-index:900;background:rgba(26,25,22,.6);display:none;align-items:center;justify-content:center}
-.pin-bg.open{display:flex}
-.pin-card{background:var(--card);border-radius:14px;padding:2rem;width:320px;text-align:center}
-.pin-card h4{font-family:'Sora',sans-serif;font-size:16px;margin-bottom:.4rem}
-.pin-card p{font-size:13px;color:var(--t2);margin-bottom:1.25rem}
-.pin-dots{display:flex;justify-content:center;gap:10px;margin-bottom:1.25rem}
-.pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--bd);background:var(--s2);transition:background .15s}
-.pin-dot.filled{background:var(--gr);border-color:var(--gr)}
-.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:.75rem}
-.pin-key{font-family:'Sora',sans-serif;font-size:18px;font-weight:600;padding:12px;border-radius:8px;border:1px solid var(--bd);background:var(--s2);cursor:pointer;color:var(--t1);transition:background .1s}
-.pin-key:hover{background:var(--bd)}
-.pin-key:active{background:var(--gr);color:#fff;border-color:var(--gr)}
-.pin-clear{font-size:13px;color:var(--re);background:none;border:none;cursor:pointer;margin-top:4px;font-family:'Be Vietnam Pro',sans-serif}
-.pin-err{font-size:12px;color:var(--re);min-height:18px;margin-top:6px}
+/* LOGIN MODAL */
+.login-bg{position:fixed;inset:0;z-index:900;background:rgba(26,25,22,.65);display:flex;align-items:center;justify-content:center}
+.login-card{background:var(--card);border-radius:14px;padding:2rem;width:360px;box-shadow:0 8px 32px rgba(0,0,0,.14)}
+.login-card h4{font-family:'Sora',sans-serif;font-size:17px;margin-bottom:.3rem}
+.login-card .sub{font-size:13px;color:var(--t2);margin-bottom:1.5rem}
+.login-field{margin-bottom:1rem}
+.login-field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--t3);font-weight:500;margin-bottom:.4rem}
+.login-field input{width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:13px;padding:9px 12px;border-radius:7px;border:1px solid var(--bd);outline:none;color:var(--t1);background:var(--card)}
+.login-field input:focus{border-color:var(--gr)}
+.login-err{font-size:12px;color:var(--re);min-height:18px;margin-bottom:.75rem}
+.btn-login{width:100%;font-family:'Be Vietnam Pro',sans-serif;font-size:14px;padding:10px;border-radius:8px;border:none;background:var(--gr);color:#fff;cursor:pointer;font-weight:500;transition:opacity .15s}
+.btn-login:hover{opacity:.88}
+.btn-login:disabled{opacity:.55;cursor:default}
+.login-loading{font-size:12px;color:var(--t3);text-align:center;margin-top:.75rem}
+
+/* ADMIN badge */
+.admin-badge{font-size:10px;padding:2px 7px;border-radius:20px;background:var(--grl);color:var(--grd);border:1px solid var(--gr);font-weight:600;margin-left:4px}
 
 .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--t1);color:#fff;font-size:12px;padding:8px 16px;border-radius:20px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
 .toast.show{opacity:1}
 .empty{text-align:center;padding:3rem;color:var(--t3);font-size:13px}
+
+/* Loading screen */
+.app-loading{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;z-index:800}
+.app-loading .spin{width:28px;height:28px;border:3px solid var(--bd);border-top-color:var(--gr);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.app-loading p{font-size:13px;color:var(--t2)}
 
 @media(max-width:600px){
   .wrap{padding:1rem .75rem 4rem}
   .trow{grid-template-columns:20px minmax(0,1fr) auto}
   .tperson,.dtag,.stamp-ok,.stamp-late,.lock-ico{display:none}
   .panel{width:100vw}
+  .login-card{width:calc(100vw - 2rem);padding:1.5rem}
 }
 </style>
 </head>
 <body>
 
-<!-- PIN MODAL -->
-<div class="pin-bg" id="pin-bg">
-  <div class="pin-card">
-    <h4 id="pin-card-title">🔐 Nhập mã PIN quản trị</h4>
-    <p id="pin-card-sub">Chỉ quản lý mới có thể chỉnh deadline</p>
-    <div class="pin-dots" id="pin-dots">
-      <div class="pin-dot" id="d0"></div>
-      <div class="pin-dot" id="d1"></div>
-      <div class="pin-dot" id="d2"></div>
-      <div class="pin-dot" id="d3"></div>
+<!-- APP LOADING -->
+<div class="app-loading" id="app-loading">
+  <div class="spin"></div>
+  <p>Đang kết nối...</p>
+</div>
+
+<!-- LOGIN MODAL -->
+<div class="login-bg" id="login-bg" style="display:none">
+  <div class="login-card">
+    <h4>🔐 Đăng nhập</h4>
+    <p class="sub">Dùng email và mật khẩu được cấp để tiếp tục</p>
+    <div class="login-field">
+      <label>Email</label>
+      <input type="email" id="inp-email" placeholder="ten@fpt.com" autocomplete="username"/>
     </div>
-    <div class="pin-pad">
-      <button class="pin-key" data-n="1">1</button>
-      <button class="pin-key" data-n="2">2</button>
-      <button class="pin-key" data-n="3">3</button>
-      <button class="pin-key" data-n="4">4</button>
-      <button class="pin-key" data-n="5">5</button>
-      <button class="pin-key" data-n="6">6</button>
-      <button class="pin-key" data-n="7">7</button>
-      <button class="pin-key" data-n="8">8</button>
-      <button class="pin-key" data-n="9">9</button>
-      <button class="pin-key" data-n="←" id="pin-del" style="font-size:16px">←</button>
-      <button class="pin-key" data-n="0">0</button>
-      <button class="pin-key" id="pin-cancel-key" style="font-size:12px;color:var(--t2)">Huỷ</button>
+    <div class="login-field">
+      <label>Mật khẩu</label>
+      <input type="password" id="inp-pass" placeholder="••••••••" autocomplete="current-password"/>
     </div>
-    <div class="pin-err" id="pin-err"></div>
+    <div class="login-err" id="login-err"></div>
+    <button class="btn-login" id="btn-login">Đăng nhập</button>
+    <div class="login-loading" id="login-loading" style="display:none">Đang xác thực...</div>
   </div>
 </div>
 
@@ -193,9 +199,10 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
 
 <!-- WHO AM I -->
 <div class="who-bar">
-  <span class="who-label">Bạn là:</span>
-  <div class="who-pills" id="who-pills"></div>
-  <span class="who-hint" id="who-hint">← chọn tên rồi nhập PIN để cập nhật tiến độ</span>
+  <span class="who-label">Đăng nhập:</span>
+  <div class="who-info" id="who-info">
+    <span class="who-hint">Đang tải...</span>
+  </div>
 </div>
 
 <!-- MAIN -->
@@ -252,32 +259,50 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
 <div class="toast" id="toast"></div>
 
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { initializeApp }                              from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getDatabase, ref, onValue, set, remove, get } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-// ════════════════════════════════════════════════
-// ⚙️  CÀI ĐẶT — chỉnh 2 dòng này
-// ════════════════════════════════════════════════
-const ADMIN_PIN  = '0408';   // ← PIN của quản lý (sửa deadline + tick mọi task)
-const DB_URL     = 'https://list-todo-af-long-chau-default-rtdb.asia-southeast1.firebasedatabase.app';
+// ════════════════════════════════════════════════════════════
+// ⚙️  CÀI ĐẶT — chỉnh các giá trị này cho đúng project của bạn
+// ════════════════════════════════════════════════════════════
+const DB_URL = 'https://list-todo-af-long-chau-default-rtdb.asia-southeast1.firebasedatabase.app';
 
-// ── PIN từng nhân viên — đổi số PIN tuỳ ý ──────────────
-const MEMBER_PINS = {
-  'Khangth':  '1001',
-  'Huongdb':  '1002',
-  'Dinhvu':   '1003',
-  'Hoaitx':   '1004',
-  'Hanntn':   '1005',
-  'DungHT70':  '1006',
-  'Haoln11':  '1007',
-  'Thydu':    '1008',
-  'Dungdp':   '1009',
-  'Toantp':   '1010',
-  'Ngoclh':   '1011',
-  'Trangntm': '1012',
+// Firebase config — lấy từ Firebase Console → Project Settings → Web app
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDAtO_Dl4oVBCK5A5hIBCuvQXyL_oFe5pU",
+  authDomain:        "list-todo-af-long-chau.firebaseapp.com",
+  databaseURL:       DB_URL,
+  projectId:         "list-todo-af-long-chau",
+  storageBucket:     "list-todo-af-long-chau.firebasestorage.app",
+  messagingSenderId: "932157572507",
+  appId:             "1:932157572507:web:f4f56b9958ba65929d4d3e",
+  measurementId:     "G-6FGMPSD3N9"
 };
-// ────────────────────────────────────────────────────────
-// ════════════════════════════════════════════════
+
+// ── MAP EMAIL → tên hiển thị + role ──────────────────────────
+// role: 'admin' có thể chỉnh deadline | 'member' chỉ tick task của mình
+const EMAIL_MAP = {
+  'haoln11@fpt.com':    { name: 'Haoln11',   role: 'member' },
+  'khangth4@fpt.com':   { name: 'Khangth',   role: 'member' },
+  'thydu@fpt.com':      { name: 'Thydu',      role: 'member' },
+  'hanntn10@fpt.com':   { name: 'Hanntn',     role: 'member' },
+  'huongdb2@fpt.com':   { name: 'Huongdb',    role: 'member' },
+  'dungdp7@fpt.com':    { name: 'Dungdp',     role: 'member' },
+  'ngoclh9@fpt.com':    { name: 'Ngoclh',     role: 'member' },
+  'kietpt20@fpt.com':   { name: 'Hoaitx',     role: 'member' },
+  'dinhvu@fpt.com':     { name: 'Dinhvu',     role: 'member' },
+  'toantp2@fpt.com':    { name: 'Toantp',     role: 'admin'  },
+
+  'trangntm43@fpt.com': { name: 'Trangntm',   role: 'member'  },
+  'dunght70@fpt.com':  { name: 'DungHT70',   role: 'member'  },
+};
+// ════════════════════════════════════════════════════════════
 
 const TASKS = [
   {id:1,  g:"CSVC + Xây dựng",                              ico:"🏗️", p:"Khangth",  n:"Đối soát chi phí chia sẻ với Fshop HCM"},
@@ -305,17 +330,20 @@ const TASKS = [
 const GROUPS  = [...new Set(TASKS.map(t=>t.g))];
 const PERSONS = [...new Set(TASKS.map(t=>t.p))].sort();
 
-// ── FIREBASE ─────────────────────────────────────────────
-const db = getDatabase(initializeApp({databaseURL:DB_URL},'keto5'));
+// ── FIREBASE INIT ─────────────────────────────────────────
+const app  = initializeApp(FIREBASE_CONFIG, 'keto5-auth');
+const db   = getDatabase(app);
+const auth = getAuth(app);
 
 // ── STATE ─────────────────────────────────────────────────
-let FB       = {};
-let curMonth = '';
-let meUser   = '';  // always require PIN on fresh load
-let curFilter= 'all';
-let viewPerson = 'all';
-let isAdmin  = false;
-let panelDLs = {};
+let FB        = {};
+let curMonth  = '';
+let meUser    = '';   // display name from EMAIL_MAP
+let isAdmin   = false;
+let curFilter = 'all';
+let viewPerson= 'all';
+let panelDLs  = {};
+let authReady = false;
 
 // ── KEY HELPERS ───────────────────────────────────────────
 const mkey    = l  => l.replace(/\//g,'-');
@@ -328,52 +356,118 @@ const fmtDate = v  => { if(!v) return ''; const[,m,d]=v.split('-'); return d+'/'
 const todayStr= () => { const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); };
 const nowStr  = () => { const d=new Date(); return d.getHours()+':'+String(d.getMinutes()).padStart(2,'0'); };
 
-// ── FIREBASE LISTENER ─────────────────────────────────────
-onValue(ref(db,'v3'), async snap => {
-  FB = snap.val() || {};
-  if (!curMonth) {
-    const d = new Date();
-    const thisMonth = (d.getMonth()+1)+'/'+d.getFullYear();
-    const snap = await get(ref(db,'v3/config/activeMonth'));
-    curMonth = (snap.exists() ? snap.val() : null) || thisMonth;
-    if (!(FB.months && FB.months[mkey(curMonth)])) {
-      set(ref(db,'v3/months/'+mkey(curMonth)), {label:curMonth,deadlines:{},tasks:{}});
-    }
+// ── AUTH STATE LISTENER ───────────────────────────────────
+onAuthStateChanged(auth, async user => {
+  document.getElementById('app-loading').style.display = 'none';
+
+  if (!user) {
+    // Chưa đăng nhập → hiện form login
+    meUser  = '';
+    isAdmin = false;
+    document.getElementById('login-bg').style.display = 'flex';
+    renderWhoBar();
+    return;
   }
-  document.getElementById('lbl-month').textContent = 'Tháng '+curMonth;
-  renderWho();
-  renderViewSel();
-  renderList();
+
+  // Đã đăng nhập
+  document.getElementById('login-bg').style.display = 'none';
+  const info = EMAIL_MAP[user.email.toLowerCase()] || { name: user.email.split('@')[0], role: 'member' };
+  meUser  = info.name;
+  isAdmin = info.role === 'admin';
+
+  renderWhoBar();
+
+  // Start Firebase data listener (only after auth)
+  if (!authReady) {
+    authReady = true;
+    startDataListener();
+  }
 });
 
-// ── WHO AM I ─────────────────────────────────────────────
-function renderWho() {
-  const container = document.getElementById('who-pills');
-  container.innerHTML = PERSONS.map(p =>
-    `<button class="who-pill ${p===meUser?'me':''}" data-p="${p}">${p}</button>`
-  ).join('');
-  container.querySelectorAll('.who-pill').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const selectedName = btn.dataset.p;
-      if (selectedName === meUser) {
-        // đã đăng nhập rồi, click lại = đăng xuất
-        meUser = '';
-        localStorage.removeItem('keto_me');
-        isAdmin = false;
-        renderWho();
-        renderList();
-        document.getElementById('who-hint').textContent = '← chọn tên rồi nhập PIN để cập nhật tiến độ';
-        return;
-      }
-      openPin(() => {}, selectedName);
-    });
-  });
-  // update panel button
+// ── LOGIN FORM ────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', handleLogin);
+document.getElementById('inp-pass').addEventListener('keydown', e => { if(e.key==='Enter') handleLogin(); });
+document.getElementById('inp-email').addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('inp-pass').focus(); });
+
+async function handleLogin() {
+  const email = document.getElementById('inp-email').value.trim();
+  const pass  = document.getElementById('inp-pass').value;
+  const errEl = document.getElementById('login-err');
+  const btn   = document.getElementById('btn-login');
+  const loading = document.getElementById('login-loading');
+
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu'; return; }
+
+  btn.disabled = true;
+  loading.style.display = 'block';
+
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+    // onAuthStateChanged sẽ xử lý tiếp
+  } catch(e) {
+    loading.style.display = 'none';
+    btn.disabled = false;
+    const codes = {
+      'auth/user-not-found':   'Email không tồn tại trong hệ thống',
+      'auth/wrong-password':   'Sai mật khẩu, vui lòng thử lại',
+      'auth/invalid-email':    'Định dạng email không hợp lệ',
+      'auth/too-many-requests':'Quá nhiều lần thử. Vui lòng chờ ít phút',
+      'auth/invalid-credential': 'Email hoặc mật khẩu không đúng',
+    };
+    errEl.textContent = codes[e.code] || ('Lỗi: ' + e.message);
+  }
+}
+
+// ── LOGOUT ────────────────────────────────────────────────
+function handleLogout() {
+  signOut(auth);
+  FB = {};
+  curMonth = '';
+  authReady = false;
+  document.getElementById('list').innerHTML = '';
+}
+
+// ── WHO BAR ───────────────────────────────────────────────
+function renderWhoBar() {
+  const info = document.getElementById('who-info');
+  if (!meUser) {
+    info.innerHTML = `<span class="who-hint">Vui lòng đăng nhập để sử dụng</span>`;
+    document.getElementById('btn-panel').className = 'topbtn';
+    document.getElementById('btn-panel').textContent = '🔒 Deadline';
+    return;
+  }
+  const user = auth.currentUser;
+  info.innerHTML = `
+    <span class="who-name">${meUser}${isAdmin ? '<span class="admin-badge">Admin</span>' : ''}</span>
+    <span class="who-email">${user ? user.email : ''}</span>
+    <button class="logout-btn" id="logout-btn">Đăng xuất</button>`;
+  document.getElementById('logout-btn').addEventListener('click', handleLogout);
+
   document.getElementById('btn-panel').className = 'topbtn' + (isAdmin ? ' admin-on' : '');
   document.getElementById('btn-panel').textContent = isAdmin ? '⚙️ Deadline (Admin)' : '🔒 Deadline';
 }
 
-// ── VIEW SELECTOR (admin: xem theo người) ────────────────
+// ── FIREBASE DATA LISTENER ────────────────────────────────
+function startDataListener() {
+  onValue(ref(db,'v3'), async snap => {
+    FB = snap.val() || {};
+    if (!curMonth) {
+      const d = new Date();
+      const thisMonth = (d.getMonth()+1)+'/'+d.getFullYear();
+      const s = await get(ref(db,'v3/config/activeMonth'));
+      curMonth = (s.exists() ? s.val() : null) || thisMonth;
+      if (!(FB.months && FB.months[mkey(curMonth)])) {
+        set(ref(db,'v3/months/'+mkey(curMonth)), {label:curMonth,deadlines:{},tasks:{}});
+      }
+    }
+    document.getElementById('lbl-month').textContent = 'Tháng '+curMonth;
+    renderViewSel();
+    renderList();
+  });
+}
+
+// ── VIEW SELECTOR ─────────────────────────────────────────
 function renderViewSel() {
   const sel = document.getElementById('view-sel');
   const prev = sel.value;
@@ -396,9 +490,7 @@ function renderList() {
   document.getElementById('bar-lbl').textContent = pct+'% hoàn thành — Tháng '+curMonth;
 
   let tasks = TASKS;
-  // view filter (admin feature)
   if (viewPerson !== 'all') tasks = tasks.filter(t => t.p === viewPerson);
-  // tab filter
   if (curFilter === 'mine')    tasks = tasks.filter(t => t.p === meUser);
   if (curFilter === 'done')    tasks = tasks.filter(t => getDone(t.id));
   if (curFilter === 'pending') tasks = tasks.filter(t => !getDone(t.id));
@@ -426,8 +518,7 @@ function renderList() {
         const isDone = !!dn;
         const diff   = dn&&dl ? diffDays(dl,dn.date) : null;
         const isMine = t.p === meUser;
-        const canTick= isMine && !isAdmin;  // members can only tick their own
-        const adminTick = isAdmin;          // admin can tick anything
+        const canTick= (isMine || isAdmin) && !!meUser;
 
         const dlTag = dl
           ? `<span class="dtag dt-set">📅 ${fmtDate(dl)}</span>`
@@ -439,12 +530,10 @@ function renderList() {
             ? `<span class="stamp-late">⚠ Trễ ${diff} ngày</span>`
             : `<span class="stamp-ok">✓ ${fmtDate(dn.date)} ${dn.time} · ${dn.by}</span>`;
         }
+        const lockIcon = (!canTick && !isDone) ? `<span class="lock-ico">🔒</span>` : '';
 
-        const isClickable = canTick || adminTick;
-        const lockIcon = (!isClickable && !isDone) ? `<span class="lock-ico">🔒</span>` : '';
-
-        return `<div class="trow ${isDone?'done':''} ${isClickable?'clickable':'locked'}" data-id="${t.id}" data-mine="${isMine?1:0}">
-          <div class="cb ${isDone?'on':''} ${!isClickable?'locked-cb':''}"></div>
+        return `<div class="trow ${isDone?'done':''} ${canTick?'clickable':'locked'}" data-id="${t.id}">
+          <div class="cb ${isDone?'on':''} ${!canTick?'locked-cb':''}"></div>
           <span class="tname">${t.n}</span>
           <span class="tperson">${t.p}</span>
           ${dlTag}${stamp}${lockIcon}
@@ -453,14 +542,12 @@ function renderList() {
     </div>`;
   }).join('');
 
-  // bind click
   document.querySelectorAll('.trow.clickable[data-id]').forEach(row => {
     row.addEventListener('click', () => toggleTask(Number(row.dataset.id)));
   });
-  // locked row: show hint
   document.querySelectorAll('.trow.locked[data-id]').forEach(row => {
     row.addEventListener('click', () => {
-      if (!meUser) showToast('Vui lòng chọn tên của bạn trước ↑');
+      if (!meUser) showToast('Vui lòng đăng nhập trước');
       else showToast('Bạn chỉ có thể tick task của chính mình');
     });
   });
@@ -468,15 +555,12 @@ function renderList() {
 
 // ── TOGGLE TASK ───────────────────────────────────────────
 async function toggleTask(id) {
+  if (!meUser) { showToast('Vui lòng đăng nhập trước'); return; }
   const path = 'v3/months/'+mkey(curMonth)+'/tasks/'+tkey(id);
   if (getDone(id)) {
     await remove(ref(db, path));
   } else {
-    await set(ref(db, path), {
-      by:   meUser || TASKS.find(t=>t.id===id).p,
-      date: todayStr(),
-      time: nowStr()
-    });
+    await set(ref(db, path), { by: meUser, date: todayStr(), time: nowStr() });
   }
   showToast('Đã cập nhật ✓');
 }
@@ -494,99 +578,11 @@ document.getElementById('view-sel').addEventListener('change', e => {
   viewPerson = e.target.value; renderList();
 });
 
-// ── PIN SYSTEM ────────────────────────────────────────────
-let pinEntry = '';
-
-function openPin(onSuccess, memberName) {
-  pinEntry = '';
-  updatePinDots();
-  document.getElementById('pin-err').textContent = '';
-  window._pinMember  = memberName || null;  // if set: validating member login
-  window._pinSuccess = onSuccess;
-  const card = document.getElementById('pin-card-title');
-  const sub  = document.getElementById('pin-card-sub');
-  if (memberName) {
-    card.textContent = `🔐 Xin chào ${memberName}`;
-    sub.textContent  = 'Nhập PIN của bạn để cập nhật tiến độ';
-  } else {
-    card.textContent = '🔐 Nhập mã PIN quản trị';
-    sub.textContent  = 'Chỉ quản lý mới có thể chỉnh deadline';
-  }
-  document.getElementById('pin-bg').classList.add('open');
-}
-
-function closePinModal() {
-  pinEntry = '';
-  document.getElementById('pin-bg').classList.remove('open');
-}
-
-function updatePinDots() {
-  for (let i=0;i<4;i++) {
-    document.getElementById('d'+i).classList.toggle('filled', i < pinEntry.length);
-  }
-}
-
-document.querySelectorAll('.pin-key[data-n]').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const n = btn.dataset.n;
-    if (n === '←') {
-      pinEntry = pinEntry.slice(0,-1);
-      updatePinDots();
-    } else if (n === 'Huỷ') {
-      closePinModal();
-    } else {
-      if (pinEntry.length >= 4) return;
-      pinEntry += n;
-      updatePinDots();
-      if (pinEntry.length === 4) {
-        setTimeout(() => {
-          const memberName = window._pinMember;
-          if (memberName) {
-            // member login: check member PIN
-            const correctPin = MEMBER_PINS[memberName];
-            if (pinEntry === correctPin) {
-              meUser = memberName;
-              localStorage.setItem('keto_me', memberName);
-              closePinModal();
-              renderWho();
-              renderList();
-              document.getElementById('who-hint').textContent = `Xin chào ${memberName}! Bạn có thể cập nhật tiến độ task của mình.`;
-              showToast(`✅ Đã đăng nhập: ${memberName}`);
-              if (window._pinSuccess) window._pinSuccess();
-            } else {
-              document.getElementById('pin-err').textContent = 'Sai PIN, thử lại';
-              pinEntry = '';
-              updatePinDots();
-            }
-          } else {
-            // admin login
-            if (pinEntry === ADMIN_PIN) {
-              isAdmin = true;
-              closePinModal();
-              renderWho();
-              renderList();
-              showToast('✅ Chế độ admin đã bật');
-              if (window._pinSuccess) window._pinSuccess();
-            } else {
-              document.getElementById('pin-err').textContent = 'Sai PIN, thử lại';
-              pinEntry = '';
-              updatePinDots();
-            }
-          }
-        }, 120);
-      }
-    }
-  });
-});
-document.getElementById('pin-cancel-key').addEventListener('click', closePinModal);
-
 // ── DEADLINE PANEL ────────────────────────────────────────
 document.getElementById('btn-panel').addEventListener('click', () => {
-  if (isAdmin) {
-    openPanel();
-  } else {
-    openPin(() => openPanel());
-  }
+  if (!meUser) { showToast('Vui lòng đăng nhập trước'); return; }
+  if (!isAdmin) { showToast('Chỉ Admin mới có thể chỉnh deadline'); return; }
+  openPanel();
 });
 document.getElementById('btn-close-panel').addEventListener('click', closePanel);
 document.getElementById('btn-cancel').addEventListener('click', closePanel);
@@ -627,12 +623,8 @@ function renderPanel() {
         <input class="task-dl-input ${isCustom?'custom':''}" type="date" data-tid="${t.id}" data-gi="${gi}" value="${val}"/>
       </div>`;
     }).join('');
-
     return `<div class="grp-block">
-      <div class="grp-hd">
-        <span class="grp-icon">${gtasks[0].ico}</span>
-        <span class="grp-name">${g}</span>
-      </div>
+      <div class="grp-hd"><span class="grp-icon">${gtasks[0].ico}</span><span class="grp-name">${g}</span></div>
       <div class="grp-dl-wrap">
         <label>Deadline nhóm:</label>
         <input type="date" class="grp-date" data-gi="${gi}" value="${gval}"/>
@@ -660,7 +652,6 @@ function renderPanel() {
 }
 
 function bindPanelEvents() {
-  // month pills
   document.querySelectorAll('.mpill[data-mlabel]').forEach(btn => {
     btn.addEventListener('click', () => {
       const label = btn.dataset.mlabel;
@@ -672,11 +663,9 @@ function bindPanelEvents() {
       panelDLs = JSON.parse(JSON.stringify(((FB.months||{})[mkey(label)]||{}).deadlines||{}));
       document.getElementById('lbl-month').textContent = 'Tháng '+label;
       renderList();
-      // update pills active state
       document.querySelectorAll('.mpill[data-mlabel]').forEach(p=>{
         p.classList.toggle('active', p.dataset.mlabel===label);
       });
-      // re-render deadline rows only
       document.getElementById('grp-blocks').innerHTML = GROUPS.map((g,gi)=>{
         const gtasks=TASKS.filter(t=>t.g===g);
         const gval=panelDLs['_g'+gi]||'';
@@ -701,12 +690,10 @@ function bindPanelEvents() {
           <div class="task-dl-list">${taskRows}</div>
         </div>`;
       }).join('');
-      // document.querySelector('.plabel:nth-of-type(2)') -- update title
       bindGroupAndTaskEvents();
     });
   });
 
-  // add month
   document.getElementById('btn-add').addEventListener('click', () => {
     const v = document.getElementById('inp-nm').value.trim(); if(!v) return;
     const mk = mkey(v);
@@ -723,7 +710,6 @@ function bindPanelEvents() {
 }
 
 function bindGroupAndTaskEvents() {
-  // apply group
   document.querySelectorAll('.apply-btn[data-gi]').forEach(btn => {
     btn.addEventListener('click', () => {
       const gi  = Number(btn.dataset.gi);
@@ -737,8 +723,6 @@ function bindGroupAndTaskEvents() {
       });
     });
   });
-
-  // individual task input
   document.querySelectorAll('.task-dl-input').forEach(inp => {
     inp.addEventListener('change', () => {
       const tid = inp.dataset.tid, gi = Number(inp.dataset.gi);
@@ -764,6 +748,7 @@ document.getElementById('btn-save-dl').addEventListener('click', async () => {
 
 // ── HISTORY ───────────────────────────────────────────────
 document.getElementById('btn-hist').addEventListener('click', () => {
+  if (!meUser) { showToast('Vui lòng đăng nhập trước'); return; }
   const months = FB.months ? Object.values(FB.months) : [];
   months.sort((a,b)=>{
     const[am,ay]=a.label.split('/').map(Number),[bm,by]=b.label.split('/').map(Number);
@@ -807,7 +792,7 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'), 2000);
+  setTimeout(()=>t.classList.remove('show'), 2500);
 }
 </script>
 </body>
