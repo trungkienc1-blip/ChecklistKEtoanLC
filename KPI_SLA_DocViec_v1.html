@@ -67,6 +67,9 @@
   .num{text-align:right;font-family:Consolas,monospace}
   .small{font-size:11px}
   .grp-tag{font-size:11px;background:#eef2f4;border:1px solid var(--line);border-radius:10px;padding:1px 8px;white-space:nowrap}
+  .reassign-sel{font-family:inherit;font-size:12px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;cursor:pointer;max-width:130px}
+  .reassign-sel:focus{border-color:var(--pri);outline:none}
+  .reassign-sel.reassigned{background:#fff3cd;border-color:#f0ad4e}
   .cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
   @media(max-width:900px){.cfg-grid{grid-template-columns:1fr}}
   .warnbadge{background:var(--red-soft);color:var(--red);font-size:10px;font-weight:700;border-radius:8px;padding:1px 7px;margin-left:5px}
@@ -125,16 +128,16 @@ const LS_KEY = 'kpi_sla_docviec_v1';
 
 const DEFAULT_CFG = {
   groups: [
-    {id:'dien',    name:'HC: Tiền điện',      sla:2,  ov:4},
-    {id:'thuenha', name:'HC: Thuê nhà/kho',   sla:5,  ov:8},
-    {id:'vaccine', name:'HC Vaccine (TTTC)',  sla:5,  ov:8},
-    {id:'bo',      name:'Khối BO',            sla:10, ov:15},
-    {id:'csvc',    name:'CSVC + Xây dựng',    sla:10, ov:15},
-    {id:'ctp',     name:'Công tác phí',       sla:12, ov:18},
-    {id:'shop',    name:'CP Shop',            sla:15, ov:22},
-    {id:'gpp',     name:'PT Địa điểm (GPP)',  sla:20, ov:30},
-    {id:'mkt',     name:'CP MKT',             sla:27, ov:40},
-    {id:'khac',    name:'Khác (lead check)',  sla:12, ov:18},
+    {id:'dien',    name:'HC: Tiền điện',      sla:1,  ov:3},
+    {id:'thuenha', name:'HC: Thuê nhà/kho',   sla:3,  ov:5},
+    {id:'vaccine', name:'HC Vaccine (TTTC)',  sla:5,  ov:10},
+    {id:'bo',      name:'Khối BO',            sla:5,  ov:10},
+    {id:'csvc',    name:'CSVC + Xây dựng',    sla:5,  ov:10},
+    {id:'ctp',     name:'Công tác phí',       sla:5,  ov:7},
+    {id:'shop',    name:'CP Shop',            sla:5,  ov:7},
+    {id:'gpp',     name:'PT Địa điểm (GPP)',  sla:3,  ov:5},
+    {id:'mkt',     name:'CP MKT',             sla:10, ov:15},
+    {id:'khac',    name:'Khác (lead check)',  sla:5,  ov:7},
   ],
   ctpSubs: [
     {id:'ASM',     name:'CTP ASM',        person:''},
@@ -146,106 +149,98 @@ const DEFAULT_CFG = {
     {id:'PTDD',    name:'CTP PTDD',       person:'Thydg'},
     {id:'CHUNG',   name:'CTP chung',      person:''},
   ],
-  // Quy tắc gán người cho hồ sơ chờ B4 — duyệt từ trên xuống, khớp rule đầu tiên
-  // region: '' = mọi vùng; dvPat/textPat: regex (không phân biệt hoa thường), '' = bỏ qua
   assignRules: [
-    {group:'dien',    region:'HCM1', dvPat:'', textPat:'', person:''},
-    {group:'dien',    region:'HCM2', dvPat:'', textPat:'', person:''},
-    {group:'dien',    region:'MB1',  dvPat:'', textPat:'', person:''},
-    {group:'dien',    region:'MB2',  dvPat:'', textPat:'', person:''},
+    {group:'dien',    region:'HCM1', dvPat:'', textPat:'', person:'Huongdb'},
+    {group:'dien',    region:'HCM2', dvPat:'', textPat:'', person:'Kietpt'},
     {group:'dien',    region:'MB',   dvPat:'', textPat:'', person:'Dinhvu'},
     {group:'dien',    region:'HNI',  dvPat:'', textPat:'', person:'Dinhvu'},
-    {group:'dien',    region:'HCM',  dvPat:'', textPat:'', person:'Hoaitx'},
     {group:'dien',    region:'MT',   dvPat:'', textPat:'', person:'Hanntn'},
     {group:'dien',    region:'MD',   dvPat:'', textPat:'', person:'Hanntn'},
     {group:'dien',    region:'MTAY', dvPat:'', textPat:'', person:'Hanntn'},
-    // thuenha vùng = người SHOP tự tạo phiếu thuê kho; phiếu HÀNH CHÍNH tạo -> creatorPerson ở trên
+    {group:'dien',    region:'',     dvPat:'VX Hanh chinh', textPat:'', person:'Ngocnd'},
     {group:'thuenha', region:'HCM1', dvPat:'', textPat:'', person:'Huongdb'},
     {group:'thuenha', region:'HCM2', dvPat:'', textPat:'', person:'Kietpt'},
-    {group:'thuenha', region:'MB1',  dvPat:'', textPat:'', person:''},
-    {group:'thuenha', region:'MB2',  dvPat:'', textPat:'', person:''},
-    {group:'thuenha', region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
-    {group:'thuenha', region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
     {group:'thuenha', region:'MB',   dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuenha', region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
     {group:'thuenha', region:'MT',   dvPat:'', textPat:'', person:'Chilhk'},
     {group:'thuenha', region:'MD',   dvPat:'', textPat:'', person:'Thydg'},
     {group:'thuenha', region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuenha', region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
     {group:'vaccine', region:'',     dvPat:'', textPat:'', person:'Ngocnd'},
-    {group:'csvc',    region:'',     dvPat:'', textPat:'xây dựng|xay dung|thi công|thi cong', person:'Huongdb'},
+    {group:'csvc',    region:'',     dvPat:'', textPat:'xây dựng|xay dung|thi công|thi cong|5%', person:'Huongdb'},
     {group:'csvc',    region:'HNI',  dvPat:'', textPat:'', person:'Diepdt'},
     {group:'csvc',    region:'MB',   dvPat:'', textPat:'', person:'Diepdt'},
     {group:'csvc',    region:'MT',   dvPat:'', textPat:'', person:'Diepdt'},
     {group:'csvc',    region:'MD',   dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'MTAY', dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'HCM',  dvPat:'', textPat:'', person:'Khangth'},
-    {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Hangttm'},
-    {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Hangttm'},
-    {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Hangttm'},
-    {group:'shop',    region:'MT',   dvPat:'', textPat:'', person:'Kietpt'},
-    {group:'shop',    region:'MB',   dvPat:'', textPat:'', person:'Kietpt'},
+    {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'shop',    region:'MT',   dvPat:'', textPat:'', person:'Chilhk'},
+    {group:'shop',    region:'MB',   dvPat:'', textPat:'', person:'Chilhk'},
     {group:'shop',    region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
-    {group:'mkt',     region:'',     dvPat:'', textPat:'^(FPR|TTTC)|phòng pr|truyền thông', person:'Hientlt'},
-    {group:'mkt',     region:'',     dvPat:'truyen thong|social',  textPat:'', person:'Hientlt'},
-    {group:'mkt',     region:'',     dvPat:'', textPat:'', person:'Tienpng'},
-    {group:'ctp',     region:'',     dvPat:'', textPat:'giám sát kinh doanh|giam sat kinh doanh|\\bRSM\\b|\\bPRSM\\b', person:'Nhanntt'},
-    {group:'ctp',     region:'',     dvPat:'', textPat:'^ASM', person:'Hanttn'},
+    {group:'mkt',     region:'',     dvPat:'', textPat:'^(FPR|TTTC)|phòng pr|truyền thông|CTP|Công tác|VX|Vacxin|TTTC', person:'Huytvt'},
+    {group:'mkt',     region:'',     dvPat:'truyen thong', textPat:'', person:'Huytvt'},
+    {group:'mkt',     region:'',     dvPat:'', textPat:'', person:'Huyentht'},
     {group:'gpp',     region:'',     dvPat:'', textPat:'^PTDD', person:'Thydg'},
-    {group:'gpp',     region:'',     dvPat:'', textPat:'', person:'Huongdb'},
-    {group:'bo',      region:'',     dvPat:'', textPat:'internet|cước|cuoc', person:'Haoln11'},
+    {group:'gpp',     region:'',     dvPat:'', textPat:'', person:'Khangth'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'internet|cước|cuoc|NTLC', person:'Haoln11'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'hub.*(bắc|bac|hni)', person:'China'},
+    {group:'bo',      region:'',     dvPat:'phong hanh chinh', textPat:'', person:'Haoln11'},
+    {group:'bo',      region:'',     dvPat:'hanh chinh mien bac', textPat:'', person:'Ngocnd'},
+    {group:'bo',      region:'',     dvPat:'nhan su|fshop', textPat:'', person:'Huongdb'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'FTD', person:'Thydu'},
     {group:'bo',      region:'',     dvPat:'', textPat:'kho tổng.*(hni|hà nội)|kho tong.*ha noi|KT[-_\\s]?(HNI|QM)', person:'China'},
-    {group:'bo',      region:'',     dvPat:'', textPat:'hub.*(bắc|bac|hni)', person:'Huyennt'},
     {group:'bo',      region:'',     dvPat:'', textPat:'hành chính miền (nam|trung)|hanh chinh mien (nam|trung)', person:'Haoln11'},
     {group:'bo',      region:'',     dvPat:'', textPat:'hành chính miền bắc|hanh chinh mien bac', person:'Ngocnd'},
-    {group:'bo',      region:'',     dvPat:'nhan su|fshop', textPat:'', person:'Huongdb'},
     {group:'bo',      region:'',     dvPat:'', textPat:'', person:'Thydu'},
+    {group:'ctp',     region:'',     dvPat:'GPP', textPat:'', person:'Thydg'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'HR|FHR', person:'Huongdb'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'điều động|phòng trọ', person:'Hanttn'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'giám sát kinh doanh|giam sat kinh doanh|\\bRSM\\b|\\bPRSM\\b', person:'Nhanntt'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'^ASM', person:'Hanttn'},
+    {group:'ctp',     region:'',     dvPat:'CSVC mien Trung|CSVC mien bac', textPat:'CTP|công tác', person:'Diepdt'},
+    {group:'ctp',     region:'',     dvPat:'ecom|cskh|tiep nhan cuoc|khieu nai|phap che|Phong Kho Tong va Dieu Van', textPat:'', person:'Thydu'},
+    {group:'ctp',     region:'',     dvPat:'Ban Xay dung va co so vat chat-virtual', textPat:'miền trung', person:'Diepdt'},
+    {group:'khac',    region:'',     dvPat:'ecom|cskh|tiep nhan cuoc|khieu nai|phap che|ho|doi ngoai', textPat:'', person:'Thydu'},
+    {group:'khac',    region:'',     dvPat:'', textPat:'RSM|PRSM', person:'Nhanntt'},
   ],
-  // CTP chung: phân tiếp theo Đơn vị (regex) → người
   ctpDvRules: [
-    {dvPat:'ban kinh doanh|kinh doanh truc tuyen', person:'Nhanntt'},
-    {dvPat:'marketing|truyen thong',               person:'Hientlt'},
-    {dvPat:'dao tao',                              person:''},
-    {dvPat:'nhan su',                              person:''},
+    {dvPat:'Kho tong Vaccine Mien Nam|kinh doanh truc tuyen|hub', person:'Thydu'},
+    {dvPat:'marketing|truyen thong', person:'Huytvt'},
+    {dvPat:'dao tao',                person:'Thydu'},
+    {dvPat:'nhan su',                person:'Huongdb'},
   ],
-  // Người tạo → vùng (học từ dữ liệu thật, purity ~100%) — dùng khi nội dung không ghi vùng
   creatorRegion: {
-    'huongdh2':'HNI','hangnn3':'MB2','traht10':'MB1','anhpn33':'MB',
-    'duyenntt29':'HCM1','trangntt204':'HCM2','tranghnt':'HCM1',
-    'thuynth17':'MT','hoangnx15':'MTAY','namnv92':'MD',
+    'anhpn33':'MB','duyenntt29':'HCM1','hangnn3':'MB','hoangnx15':'MTAY',
+    'huongdh2':'HNI','namnv92':'MD','thuynth17':'MT','traht10':'MB',
+    'tranghnt':'HCM1','trangntt204':'HCM2',
   },
-  // Người tạo → người phụ trách CỐ ĐỊNH cho THUÊ NHÀ/KHO (ưu tiên cao nhất, ghi đè assignRules).
-  // Phiếu do HÀNH CHÍNH tạo -> người admin theo vùng (bảng này). Phiếu do SHOP tự tạo -> rule vùng
-  // thuenha (= người shop: HCM→Thydg, MD→Thydg, MTAY/HNI/MB→Lanntn). Chỉ áp cho thuenha, không áp dien.
   creatorPerson: {
-    'duyenntt29':'Huongdb','tranghnt':'Huongdb','trangntt204':'Kietpt','huongdh2':'Kietpt',
-    'anhpn33':'Dinhvu','hangnn3':'Dinhvu','traht10':'Dinhvu',
-    'thuynth17':'Hanntn','hoangnx15':'Hanntn','namnv92':'Hanntn',
+    'anhpn33':'Dinhvu','duyenntt29':'Huongdb','hangnn3':'Dinhvu','hoangnx15':'Hanntn',
+    'huongdh2':'Kietpt','namnv92':'Hanntn','thuynth17':'Hanntn','traht10':'Dinhvu',
+    'tranghnt':'Huongdb','trangntt204':'Kietpt',
   },
-  // Người tạo chuyên trách → người xử lý CỐ ĐỊNH cho MỌI nhóm (ưu tiên cao nhất).
-  // Học từ dữ liệu thật (purity ≥95%, ≥8 hồ sơ): các đầu mối tạo phiếu gộp cho 1 người.
   creatorPersonAll: {
     'duyenvtm7':'Thydu', 'nhungcth2':'Thydu', 'trunglt19':'Khangth', 'khuongn':'Khangth',
   },
   staff: [
-    {name:'Diepdt',  acc:'diepdt5',  team:'CP'}, {name:'Khangth', acc:'khangth4',  team:'CP'},
-    {name:'Huongdb', acc:'huongdb2', team:'CP'}, {name:'Thydg',   acc:'thydg',     team:'CP'},
-    {name:'Ngocnd',  acc:'ngocnd13', team:'CP'}, {name:'Dinhvu',  acc:'dinhvu',    team:'CP'},
-    {name:'Hoaitx',  acc:'hoaitx3',  team:'CP'}, {name:'Hanntn',  acc:'hanntn10',  team:'CP'},
-    {name:'Haoln11', acc:'haoln11',  team:'CP'}, {name:'Hientlt', acc:'hientlt3',  team:'CP'},
-    {name:'Tienpng', acc:'tienpng',  team:'CP'}, {name:'Hangttm', acc:'hangttm13', team:'CP'},
-    {name:'Kietpt',  acc:'kietpt20', team:'CP'}, {name:'Nhanntt', acc:'nhanntt51', team:'CP'},
-    {name:'Hanttn',  acc:'hanttn22', team:'CP'}, {name:'Huyennt', acc:'huyennt30', team:'CP'},
-    {name:'Thydu',   acc:'thydu',    team:'CP'}, {name:'Dungdp',  acc:'dungdp7',   team:'TT'},
-    {name:'Ngoclh',  acc:'ngoclh9',  team:'TT'}, {name:'Lanntn',  acc:'lanntn19',  team:'CP'},
-    {name:'Chilhk',  acc:'chilhk',   team:'CP'}, {name:'China',   acc:'china2',    team:'CP'},
-    {name:'Hungnm',  acc:'hungnm132',team:'CP'}, {name:'Lytt',    acc:'lytt9',     team:'CP'},
+    {name:'Diepdt',   acc:'diepdt5',   team:'CP'}, {name:'Khangth',  acc:'khangth4',  team:'CP'},
+    {name:'Huongdb',  acc:'huongdb2',  team:'CP'}, {name:'Thydg',    acc:'thydg',     team:'CP'},
+    {name:'Dinhvu',   acc:'dinhvu',    team:'CP'}, {name:'Hanntn',   acc:'hanntn10',  team:'CP'},
+    {name:'Haoln11',  acc:'haoln11',   team:'CP'}, {name:'Huytvt',   acc:'huytvt',    team:'CP'},
+    {name:'Kietpt',   acc:'kietpt20',  team:'CP'}, {name:'Nhanntt',  acc:'nhanntt51', team:'CP'},
+    {name:'Hanttn',   acc:'hanttn22',  team:'CP'}, {name:'Thydu',    acc:'thydu',     team:'CP'},
+    {name:'Dungdp',   acc:'dungdp7',   team:'TT'}, {name:'Ngoclh',   acc:'ngoclh9',   team:'TT'},
+    {name:'Lanntn',   acc:'lanntn19',  team:'CP'}, {name:'Chilhk',   acc:'chilhk',    team:'CP'},
+    {name:'Huytvt',   acc:'huytvt',    team:'CP'}, {name:'Huyentht', acc:'huyentht',  team:'CP'},
   ],
-  excludeRecv: ['truongvn5','nhungmth5','huynhltn2'],
+  excludeRecv: ['truongvn5','nhungmth5','huynhltn2','china2'],
   leadAcc: ['toantp2'],
   leadName: 'Toantp (Lead)',
   b5Days: 3,
   warnPct: 70,
-  // Bộ chỉ tiêu KPI tổng hợp — mặc định giữ nguyên 7 chỉ tiêu KPI gốc (Team CP) để đối chiếu.
-  // type 'auto' lấy từ dữ liệu upload; 'manual' nhập tay theo quý. Trọng số (ts) tùy chỉnh trong Cấu hình.
   kpiCriteria: [
     {id:'c1', name:'Tỷ lệ hạch toán chính xác', ts:45, type:'manual', tv:98,  lower:false, unit:'%'},
     {id:'c2', name:'SLA B3-B4 theo nhóm CP',    ts:15, type:'auto',   metric:'sla_rate',    tv:95,  lower:false, unit:'%'},
@@ -255,16 +250,14 @@ const DEFAULT_CFG = {
     {id:'c6', name:'Hồ sơ quá hạn nặng',        ts:10, type:'auto',   metric:'overdue_cnt', tv:0,   lower:true,  is_cnt:true, unit:'hs'},
     {id:'c7', name:'Sáng kiến được áp dụng',    ts:0,  type:'manual', tv:1,   lower:false, bonus:true, unit:'sk'},
   ],
-  // Bộ chỉ tiêu Team TT (thanh toán B7-B8) — theo KPI_TT gốc, đều nhập tay;
-  // SL hồ sơ B7-B8 hiển thị làm thông tin theo dõi (không tính điểm)
   kpiCriteriaTT: [
-    {id:'t1', name:'Tỷ lệ sai sót thanh toán',           ts:25, type:'manual', tv:0.3, lower:true,  unit:'%'},
-    {id:'t2', name:'Độ chính xác hạch toán ngân hàng',   ts:25, type:'manual', tv:99.7,lower:false, unit:'%'},
-    {id:'t3', name:'Tuân thủ deadline báo cáo',          ts:25, type:'manual', tv:3,   lower:true,  unit:'%'},
-    {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100, lower:false, unit:'%'},
-    {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,   lower:false, bonus:true, unit:'sk'},
+    {id:'t1', name:'Tỷ lệ sai sót thanh toán',           ts:25, type:'manual', tv:99.7, lower:false, unit:'%'},
+    {id:'t2', name:'Độ chính xác hạch toán ngân hàng',   ts:25, type:'manual', tv:99.7, lower:false, unit:'%'},
+    {id:'t3', name:'Tuân thủ deadline báo cáo',          ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
+    {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
+    {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 3,  // tăng khi đổi creatorRegion/assignRules mặc định để migration cập nhật vào config đã lưu
+  cfgVer: 5,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -306,9 +299,9 @@ function renderBanner(){
 
 /* ════════════════ PHÂN LOẠI NHÓM CHI PHÍ ════════════════ */
 const RX = {
-  ctp: /công tác phí|cong tac phi|báo hồng|bao hong|hỗ trợ bán hàng|ho tro ban hang|lệnh điều động|lenh dieu dong|tân asm|tan asm|ksnb/i,
+  ctp: /công tác phí|cong tac phi|b[áa]o\s*h[ồôo][nng]+g|hỗ trợ bán hàng|ho tro ban hang|lệnh điều động|lenh dieu dong|tân asm|tan asm|ksnb/i,
   dien: /tiền điện|tien dien|điện tay|dien tay|hoá đơn điện|hóa đơn điện|cp điện|chi phí điện|chi phi dien/i,
-  thuenha: /thuê nhà|thue nha|1422 thuê|thuê mặt bằng|tiền nhà|tien nha|thuê kho|thue kho/i,
+  thuenha: /thuê nhà|thue nha|1422 thuê|thuê mặt bằng|tiền nhà|tien nha|thuê kho|thue kho|thuê biển|thue bien/i,
   mkt_dv: /marketing|truyen thong|khuyen mai|social/i,
   gpp: /thủ tục gpp|tái thẩm định gpp|phát triển địa điểm|nộp phạt|nop phat|xử phạt|xu phat/i,
   csvc_txt: /xây dựng|xay dung|sửa chữa|sua chua/i,
@@ -350,7 +343,7 @@ function ctpSub(t, tl, dvl){
   if(px==='ASM' || tl.includes('tân asm') || tl.includes('tan asm') || /\basm\b/.test(tl.slice(0,40))) return 'ASM';
   if(px==='FTF' || tl.includes('taskforce') || tl.includes('taskfore') || dvl.includes('taskfore')) return 'FTF';
   if(tl.includes('ksnb') || tl.includes('kiểm soát') || tl.includes('kiem soat')) return 'KSNB';
-  if(tl.includes('báo hồng') || tl.includes('bao hong') || tl.includes('báohồng')) return 'BAOHONG';
+  if(/b[áa]o\s*h[ồôo][nng]+g/i.test(tl)) return 'BAOHONG';
   if(px==='LOC') return 'LOC';
   if(tl.includes('ptdd')) return 'PTDD';
   if(tl.includes('sự kiện') || tl.includes('su kien')) return 'SUKIEN';
@@ -767,12 +760,19 @@ function renderDoc(){
   const grpOpts = '<option value="">— Tất cả nhóm —</option>'+CFG.groups.map(g=>`<option value="${g.id}" ${docFilter.group===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
   const stOpts = '<option value="">— Trạng thái —</option>'+Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}" ${docFilter.status===k?'selected':''}>${v.lbl}</option>`).join('');
 
+  const staffOpts = (CFG.staff||[]).map(s=>s.name).sort();
   const trA = rowsA.map(p=>{
     const g = grpById(p.group); const sm = STATUS_META[p.st];
+    const cur = p.person||'';
+    const isReassigned = !!REASSIGN[p.ma];
+    const selHtml = `<select class="reassign-sel${isReassigned?' reassigned':''}" onchange="fbReassign('${esc(p.ma)}',this.value)">
+      <option value=""${!cur?' selected':''}>— Chưa gán —</option>
+      ${staffOpts.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}
+    </select>`;
     return `<tr>
       <td class="mono">${esc(p.ma)}</td>
       <td><span class="pill p-grey">Chờ B4</span></td>
-      <td>${esc(p.person||'— Chưa gán')}</td>
+      <td>${selHtml}</td>
       <td><span class="grp-tag">${esc(g.name)}${p.sub?' · '+esc(p.sub):''}</span></td>
       <td>${esc(String(p.muc).slice(0,90))}</td>
       <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
@@ -1072,7 +1072,7 @@ function buildTongTable(people, criteria, months, infoLabel, infoFn){
       const cur = MANUAL[tongQuy]?.[s.acc]?.[crit.id] ?? '';
       return `<td class="num">
         <input type="number" step="0.1" style="width:64px" value="${cur}" placeholder="–"
-          onchange="setManualKpi('${tongQuy}','${esc(s.acc)}','${crit.id}',this.value)">
+          onchange="setManualKpi('${tongQuy}','${esc(s.acc)}','${crit.id}',this.value)" ${USER_ROLE!=='admin'?'disabled':''}>
         <div class="small mut">${r!==null ? (crit.bonus?'+':'')+r.score.toFixed(1)+' đ' : ''}</div></td>`;
     }).join('');
     return `<tr style="${isLead?'background:#eef2f4':''}">
@@ -1117,20 +1117,20 @@ function renderTong(){
     s => `<b style="color:var(--violet)">${ttCount(s.acc, months).toLocaleString('vi')}</b> hs B7-B8`);
 
   el.innerHTML = `
-    ${wsCP!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team CP đang là <b>${wsCP}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
-    ${wsTT!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team TT đang là <b>${wsTT}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
+    ${USER_ROLE==='admin'&&wsCP!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team CP đang là <b>${wsCP}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
+    ${USER_ROLE==='admin'&&wsTT!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team TT đang là <b>${wsTT}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
     <div class="card">
       <div class="filters">
         <b style="font-size:13px">Kỳ chấm:</b>${qChips}
         <span style="flex:1"></span>
-        <button class="btn btn-ghost" onclick="downloadManualTemplate(false)">⬇ Tải template (Excel/CSV)</button>
+        ${USER_ROLE==='admin'?`<button class="btn btn-ghost" onclick="downloadManualTemplate(false)">⬇ Tải template (Excel/CSV)</button>
         <button class="btn btn-ghost" onclick="document.getElementById('manualImport').click()">⬆ Nạp file KPI (.xlsx/.csv)</button>
-        <input type="file" id="manualImport" accept=".xlsx,.csv" style="display:none" onchange="importManualFile(this.files[0]);this.value=''">
+        <input type="file" id="manualImport" accept=".xlsx,.csv" style="display:none" onchange="importManualFile(this.files[0]);this.value=''">`:''}
         <button class="btn btn-success" onclick="exportTong()">⬇ Xuất Excel bảng điểm</button>
       </div>
-      <div class="small mut" style="margin-bottom:8px">
+      ${USER_ROLE==='admin'?`<div class="small mut" style="margin-bottom:8px">
         Chỉ tiêu <b>AUTO</b> tính trực tiếp từ dữ liệu upload theo SLA nhóm đang cấu hình. Chỉ tiêu <b>NHẬP</b>: gõ trực tiếp trên bảng, hoặc bấm <b>Tải template</b> → điền giá trị thực đạt trong Excel → <b>Nạp file KPI</b> để nhập hàng loạt (điểm tự quy đổi theo trọng số, lưu theo từng quý).
-      </div>
+      </div>`:''}
       <div class="card-title" style="color:#2563eb">■ Team CP — chi phí (${cpPeople.length} người)</div>
       ${cpTable}
       <div class="card-title" style="color:var(--violet);margin-top:18px">■ Team TT — thanh toán B7-B8 (${ttPeople.length} người) · theo dõi số lượng hồ sơ xử lý, KPI nhập tay</div>
@@ -1504,6 +1504,13 @@ drop.addEventListener('drop', e=>{e.preventDefault(); handleFiles(e.dataTransfer
 fi.addEventListener('change', e=>handleFiles(e.target.files));
 
 /* ════════════════ FIREBASE ════════════════ */
+function showToast(msg, ms=3000){
+  let t = document.getElementById('_toast');
+  if(!t){ t=document.createElement('div'); t.id='_toast'; t.style.cssText='position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1a1916;color:#fff;padding:10px 22px;border-radius:10px;font-size:13px;z-index:9999;opacity:0;transition:opacity .3s'; document.body.appendChild(t); }
+  t.textContent=msg; t.style.opacity='1';
+  clearTimeout(t._tid); t._tid=setTimeout(()=>{ t.style.opacity='0'; }, ms);
+}
+
 const FIREBASE_CONFIG = {
   apiKey:"AIzaSyDAtO_Dl4oVBCK5A5hIBCuvQXyL_oFe5pU",
   authDomain:"list-todo-af-long-chau.firebaseapp.com",
@@ -1527,6 +1534,7 @@ const FB_EMAIL_MAP = {
 };
 let USER_ROLE = 'member';
 let FBDB = null;
+let REASSIGN = {}; // {ma: {person, by, at}}
 
 const fbApp = firebase.initializeApp(FIREBASE_CONFIG, 'keto5-auth');
 const fbAuth = fbApp.auth();
@@ -1553,6 +1561,14 @@ fbAuth.onAuthStateChanged(async user => {
   barrier.style.display = 'none';
   await fbLoadCfg();
   await fbLoadData();
+  if(DERIVED && DERIVED.pendA){
+    for(const p of DERIVED.pendA){
+      p.person = assignPerson(p);
+      const g = grpById(p.group);
+      if(g){ p.sla = g.sla; p.ov = g.ov; }
+    }
+  }
+  await fbLoadReassign();
   renderBanner(); renderFileBadges(); renderAll();
 });
 
@@ -1576,6 +1592,8 @@ async function fbLoadCfg(){
       cfgIsDefault = false;
       for(const k of Object.keys(DEFAULT_CFG)) if(CFG[k]===undefined) CFG[k]=JSON.parse(JSON.stringify(DEFAULT_CFG[k]));
       for(const s of CFG.staff) if(!s.team) s.team = ['dungdp7','ngoclh9'].includes(s.acc) ? 'TT' : 'CP';
+      migrateCfg();
+      if(CFG.cfgVer !== snap.val().cfgVer && USER_ROLE === 'admin') await FBDB.ref('v3/kpiConfig').set(CFG);
     } else {
       CFG = JSON.parse(JSON.stringify(DEFAULT_CFG));
       cfgIsDefault = true;
@@ -1617,9 +1635,23 @@ async function fbLoadData(){
   }catch(e){ console.warn('Firebase data load failed:', e); return false; }
 }
 
+function mergeReassign(){
+  if(!DERIVED || !DERIVED.pendA) return;
+  const activeMa = new Set(DERIVED.pendA.map(p=>p.ma));
+  for(const p of DERIVED.pendA){
+    if(REASSIGN[p.ma]) p.person = REASSIGN[p.ma].person;
+  }
+  const stale = Object.keys(REASSIGN).filter(ma=>!activeMa.has(ma));
+  if(stale.length){
+    for(const ma of stale) delete REASSIGN[ma];
+    if(FBDB) for(const ma of stale) FBDB.ref('v3/reassign/'+ma).remove().catch(()=>{});
+  }
+}
+
 async function fbPushData(){
   if(USER_ROLE !== 'admin' || !DERIVED) return;
   try{
+    mergeReassign();
     await FBDB.ref('v3/kpiData').set({
       updatedAt: new Date().toISOString(),
       stats: {total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months]},
@@ -1634,6 +1666,30 @@ async function fbPushData(){
 
 // Override saveCfg to use Firebase
 saveCfg = fbSaveCfg;
+
+async function fbLoadReassign(){
+  try{
+    const snap = await FBDB.ref('v3/reassign').once('value');
+    REASSIGN = snap.val() || {};
+    for(const p of DERIVED.pendA){
+      if(REASSIGN[p.ma]) p.person = REASSIGN[p.ma].person;
+    }
+  }catch(e){ console.warn('Load reassign failed:', e); }
+}
+async function fbReassign(ma, person){
+  const info = FB_EMAIL_MAP[(fbAuth.currentUser?.email||'').toLowerCase()] || {name:'?'};
+  REASSIGN[ma] = {person, by:info.name, at:new Date().toISOString()};
+  const p = DERIVED.pendA.find(x=>x.ma===ma);
+  if(p) p.person = person;
+  try{
+    await FBDB.ref('v3/reassign/'+ma).set(REASSIGN[ma]);
+    showToast('✓ Đã chuyển '+ma+' → '+person, 2000);
+  }catch(e){
+    console.error('Save reassign failed:', e);
+    alert('Lỗi lưu chuyển người: '+e.message+'\n\nCó thể do Firebase Rules chưa cho phép write vào v3/reassign.');
+  }
+  renderDoc();
+}
 </script>
 </body>
 </html>
