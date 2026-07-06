@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>App Kế Toán — Checklist &amp; KPI</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#f4f3ef; --card:#fff; --line:#e2e0d8; --ink:#1a1916; --mut:#6b6960;
+    --gr:#2d6a4f; --grl:#d8f3dc; --grd:#27500a; --navy:#16324a; --re:#b5451b;
+  }
+  html,body{height:100%}
+  body{font-family:"Be Vietnam Pro","Segoe UI",-apple-system,sans-serif;background:var(--bg);color:var(--ink);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+  /* Top bar */
+  .top{background:#1a1916;color:#fff;height:50px;display:flex;align-items:center;gap:14px;padding:0 16px;flex-shrink:0}
+  .logo{font-weight:700;font-size:15px}.logo span{color:#93c5fd}
+  .tabs{display:flex;gap:4px;margin-left:10px}
+  .tab{background:rgba(255,255,255,.08);border:none;color:#cdd6de;font-family:inherit;font-size:13px;font-weight:600;padding:7px 16px;border-radius:7px;cursor:pointer}
+  .tab:hover{background:rgba(255,255,255,.16)}
+  .tab.act{background:#2563eb;color:#fff}
+  .top-r{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:12.5px}
+  .who-name{font-weight:600}
+  .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:12px;background:var(--grl);color:var(--grd)}
+  .badge.mem{background:rgba(255,255,255,.15);color:#cdd6de}
+  .logout{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);color:#fff;font-family:inherit;font-size:12px;padding:5px 12px;border-radius:7px;cursor:pointer}
+  .logout:hover{border-color:var(--re);color:#ffd}
+
+  /* Content */
+  .content{flex:1;position:relative;background:var(--bg)}
+  .frame{position:absolute;inset:0;width:100%;height:100%;border:none;display:none}
+  .frame.act{display:block}
+
+  /* Loading + login */
+  .center{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:var(--bg);z-index:50}
+  .spin{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--gr);border-radius:50%;animation:sp .8s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .login-card{background:#fff;border-radius:14px;padding:30px;width:360px;max-width:calc(100vw - 2rem);box-shadow:0 10px 40px rgba(0,0,0,.15)}
+  .login-card h2{font-size:18px;margin-bottom:4px}
+  .login-card .sub{font-size:13px;color:var(--mut);margin-bottom:20px}
+  .fld{margin-bottom:14px}
+  .fld label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);font-weight:600;margin-bottom:5px}
+  .fld input{width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;outline:none}
+  .fld input:focus{border-color:var(--gr)}
+  .err{font-size:12.5px;color:var(--re);min-height:18px;margin-bottom:8px}
+  .btn-login{width:100%;font-family:inherit;font-size:14px;font-weight:600;padding:11px;border:none;border-radius:9px;background:var(--gr);color:#fff;cursor:pointer}
+  .btn-login:hover{opacity:.9}.btn-login:disabled{opacity:.55;cursor:default}
+  .hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<!-- Loading -->
+<div class="center" id="loading"><div class="spin"></div><p style="font-size:13px;color:var(--mut)">Đang kết nối…</p></div>
+
+<!-- Login -->
+<div class="center hidden" id="loginScreen">
+  <div class="login-card">
+    <h2>🔐 Đăng nhập</h2>
+    <div class="sub">Dùng email &amp; mật khẩu được cấp (chung với Checklist)</div>
+    <div class="fld"><label>Email</label><input type="email" id="email" placeholder="ten@fpt.com" autocomplete="username"></div>
+    <div class="fld"><label>Mật khẩu</label><input type="password" id="pass" placeholder="••••••••" autocomplete="current-password"></div>
+    <div class="err" id="err"></div>
+    <button class="btn-login" id="btnLogin">Đăng nhập</button>
+  </div>
+</div>
+
+<!-- App -->
+<div class="top hidden" id="topbar">
+  <div class="logo">Kế Toán <span>App</span></div>
+  <div class="tabs">
+    <button class="tab act" data-tab="checklist" onclick="showTab('checklist')">✅ Checklist cuối tháng</button>
+    <button class="tab" data-tab="kpi" onclick="showTab('kpi')">📊 KPI &amp; Đốc việc</button>
+  </div>
+  <div class="top-r">
+    <span class="who-name" id="whoName"></span>
+    <span class="badge" id="whoBadge"></span>
+    <button class="logout" id="btnLogout">Đăng xuất</button>
+  </div>
+</div>
+<div class="content hidden" id="content">
+  <iframe class="frame act" id="frame-checklist" title="Checklist"></iframe>
+  <iframe class="frame" id="frame-kpi" title="KPI"></iframe>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, setPersistence, browserLocalPersistence }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyDAtO_Dl4oVBCK5A5hIBCuvQXyL_oFe5pU",
+  authDomain:        "list-todo-af-long-chau.firebaseapp.com",
+  databaseURL:       "https://list-todo-af-long-chau-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "list-todo-af-long-chau",
+  storageBucket:     "list-todo-af-long-chau.firebasestorage.app",
+  messagingSenderId: "932157572507",
+  appId:             "1:932157572507:web:f4f56b9958ba65929d4d3e",
+  measurementId:     "G-6FGMPSD3N9"
+};
+// QUAN TRỌNG: dùng CÙNG tên app 'keto5-auth' như file checklist để phiên đăng nhập
+// được chia sẻ (Firebase lưu phiên theo apiKey + TÊN APP). Khác tên ⇒ iframe bắt đăng nhập lại.
+const app  = initializeApp(FIREBASE_CONFIG, 'keto5-auth');
+const auth = getAuth(app);
+
+const EMAIL_MAP = {
+  'haoln11@fpt.com':{name:'Haoln11',role:'member'}, 'khangth4@fpt.com':{name:'Khangth',role:'member'},
+  'thydu@fpt.com':{name:'Thydu',role:'member'}, 'hanntn10@fpt.com':{name:'Hanntn',role:'member'},
+  'huongdb2@fpt.com':{name:'Huongdb',role:'member'}, 'dungdp7@fpt.com':{name:'Dungdp',role:'member'},
+  'ngoclh9@fpt.com':{name:'Ngoclh',role:'member'}, 'kietpt20@fpt.com':{name:'Kietpt',role:'member'},
+  'dinhvu@fpt.com':{name:'Dinhvu',role:'member'}, 'toantp2@fpt.com':{name:'Toantp',role:'admin'},
+  'trangntm43@fpt.com':{name:'Trangntm',role:'member'},
+  'chilhk@fpt.com':{name:'Chilhk',role:'member'}, 'lanntn10@fpt.com':{name:'Lanntn',role:'member'},
+  'diepdt2@fpt.com':{name:'Diepdt',role:'member'}, 'nhanntt@fpt.com':{name:'Nhanntt',role:'member'},
+  'hanttn@fpt.com':{name:'Hanttn',role:'member'}, 'huyentht@fpt.com':{name:'Huyentht',role:'member'},
+  'thydg@fpt.com':{name:'Thydg',role:'member'},
+};
+
+const $ = id => document.getElementById(id);
+const CHECKLIST_SRC = 'checklist-ketoan%20vcuoi.html';
+const KPI_SRC = 'KPI_SLA_DocViec_v1.html';
+let framesLoaded = {checklist:false, kpi:false};
+
+window.showTab = function(t){
+  for(const b of document.querySelectorAll('.tab')) b.classList.toggle('act', b.dataset.tab===t);
+  $('frame-checklist').classList.toggle('act', t==='checklist');
+  $('frame-kpi').classList.toggle('act', t==='kpi');
+  // lazy load iframe khi mở lần đầu
+  if(t==='checklist' && !framesLoaded.checklist){ $('frame-checklist').src = CHECKLIST_SRC; framesLoaded.checklist=true; }
+  if(t==='kpi' && !framesLoaded.kpi){ $('frame-kpi').src = KPI_SRC; framesLoaded.kpi=true; }
+};
+
+setPersistence(auth, browserLocalPersistence).catch(()=>{});
+
+onAuthStateChanged(auth, user => {
+  $('loading').classList.add('hidden');
+  if(!user){
+    $('loginScreen').classList.remove('hidden');
+    $('topbar').classList.add('hidden'); $('content').classList.add('hidden');
+    return;
+  }
+  const info = EMAIL_MAP[(user.email||'').toLowerCase()] || {name:(user.email||'').split('@')[0], role:'member'};
+  $('whoName').textContent = info.name;
+  $('whoBadge').textContent = info.role==='admin' ? 'Admin' : 'Thành viên';
+  $('whoBadge').className = 'badge' + (info.role==='admin'?'':' mem');
+  $('loginScreen').classList.add('hidden');
+  $('topbar').classList.remove('hidden'); $('content').classList.remove('hidden');
+  // nạp tab đang hiển thị (checklist mặc định)
+  showTab(document.querySelector('.tab.act')?.dataset.tab || 'checklist');
+});
+
+$('btnLogin').addEventListener('click', doLogin);
+$('pass').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+$('email').addEventListener('keydown', e => { if(e.key==='Enter') $('pass').focus(); });
+async function doLogin(){
+  const email = $('email').value.trim(), pass = $('pass').value;
+  $('err').textContent='';
+  if(!email || !pass){ $('err').textContent='Vui lòng nhập đủ email và mật khẩu'; return; }
+  $('btnLogin').disabled = true; $('btnLogin').textContent='Đang xác thực…';
+  try{ await signInWithEmailAndPassword(auth, email, pass); }
+  catch(e){
+    const m = {'auth/invalid-credential':'Email hoặc mật khẩu không đúng','auth/wrong-password':'Sai mật khẩu','auth/user-not-found':'Email không tồn tại','auth/invalid-email':'Email không hợp lệ','auth/too-many-requests':'Thử quá nhiều lần, chờ ít phút'};
+    $('err').textContent = m[e.code] || ('Lỗi: '+e.message);
+  }finally{ $('btnLogin').disabled=false; $('btnLogin').textContent='Đăng nhập'; }
+}
+$('btnLogout').addEventListener('click', ()=>{
+  // reset iframe để phiên sau nạp lại sạch
+  framesLoaded={checklist:false,kpi:false};
+  $('frame-checklist').src='about:blank'; $('frame-kpi').src='about:blank';
+  signOut(auth);
+});
+</script>
+</body>
+</html>

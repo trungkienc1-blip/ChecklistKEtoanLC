@@ -195,6 +195,7 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
   <span id="lbl-month" style="font-size:12px;color:var(--t2);padding:4px 10px;background:var(--s2);border-radius:20px;border:1px solid var(--bd)">Tháng --/----</span>
   <button class="topbtn" id="btn-hist">📊 Lịch sử</button>
   <button class="topbtn" id="btn-panel">🔒 Deadline</button>
+  <button class="topbtn" id="btn-tasks" style="display:none">📝 Công việc</button>
 </div>
 
 <!-- WHO AM I -->
@@ -241,6 +242,21 @@ body{font-family:'Be Vietnam Pro',sans-serif;background:var(--bg);color:var(--t1
     <div class="pfoot">
       <button class="btn-ghost" id="btn-cancel">Đóng</button>
       <button class="btn-save" id="btn-save-dl">💾 Lưu deadline</button>
+    </div>
+  </div>
+</div>
+
+<!-- TASK MANAGER PANEL -->
+<div class="ov" id="ov-tasks">
+  <div class="panel">
+    <div class="ph">
+      <h3>📝 Quản lý công việc cuối tháng</h3>
+      <button class="ph-x" id="btn-close-tasks">✕</button>
+    </div>
+    <div class="pbody" id="tasks-body"></div>
+    <div class="pfoot">
+      <button class="btn-ghost" id="btn-cancel-tasks">Đóng</button>
+      <button class="btn-save" id="btn-save-tasks">💾 Lưu danh sách</button>
     </div>
   </div>
 </div>
@@ -304,7 +320,7 @@ const EMAIL_MAP = {
 };
 // ════════════════════════════════════════════════════════════
 
-const TASKS = [
+const DEFAULT_TASKS = [
   {id:1,  g:"CSVC + Xây dựng",                              ico:"🏗️", p:"Khangth",  n:"Đối soát chi phí chia sẻ với Fshop HCM"},
   {id:2,  g:"CSVC + Xây dựng",                              ico:"🏗️", p:"Huongdb",  n:"Trích + giải trình xây dựng"},
   {id:3,  g:"Hành chính (Thuê nhà + Điện + CP hành chính)", ico:"🏢", p:"Dinhvu",   n:"Thuế + thuê + 1422 thuê nhà + điện tay Miền Bắc"},
@@ -328,8 +344,25 @@ const TASKS = [
   {id:20, g:"Lead",                                         ico:"👑", p:"Toantp",   n:"View chi phí all"},
   {id:21, g:"Lead",                                         ico:"👑", p:"Toantp",   n:"Check sổ 3311, 33888, 3312, 1411"},
 ];
-const GROUPS  = [...new Set(TASKS.map(t=>t.g))];
-const PERSONS = [...new Set(TASKS.map(t=>t.p))].sort();
+let TASKS   = DEFAULT_TASKS.slice();
+let GROUPS  = [...new Set(TASKS.map(t=>t.g))];
+let PERSONS = [...new Set(TASKS.map(t=>t.p))].sort();
+// TASKS lấy từ Firebase (v3/config/tasks) nếu có; nếu chưa thì dùng DEFAULT_TASKS trong code.
+function applyTasks(fbTasks){
+  if(fbTasks && Object.keys(fbTasks).length){
+    TASKS = Object.values(fbTasks).sort((a,b)=>(a.ord??a.id??0)-(b.ord??b.id??0));
+  } else {
+    TASKS = DEFAULT_TASKS.slice();
+  }
+  GROUPS  = [...new Set(TASKS.map(t=>t.g))];
+  PERSONS = [...new Set(TASKS.map(t=>t.p))].sort();
+}
+// Danh sách người để chọn khi gán việc = tên trong EMAIL_MAP ∪ người đang có trong task
+function allPersons(){
+  const s = new Set(Object.values(EMAIL_MAP).map(x=>x.name));
+  TASKS.forEach(t=>{ if(t.p) s.add(t.p); });
+  return [...s].sort();
+}
 
 // ── FIREBASE INIT ─────────────────────────────────────────
 const app  = initializeApp(FIREBASE_CONFIG, 'keto5-auth');
@@ -362,7 +395,11 @@ onAuthStateChanged(auth, async user => {
   document.getElementById('app-loading').style.display = 'none';
 
   if (!user) {
-    // Chưa đăng nhập → hiện form login
+    if (window.parent !== window) {
+      // Trong iframe (AppKeToan): chờ auth resolve từ IndexedDB, không hiện login
+      return;
+    }
+    // Mở trực tiếp: hiện form login
     meUser  = '';
     isAdmin = false;
     document.getElementById('login-bg').style.display = 'flex';
@@ -436,6 +473,7 @@ function renderWhoBar() {
     info.innerHTML = `<span class="who-hint">Vui lòng đăng nhập để sử dụng</span>`;
     document.getElementById('btn-panel').className = 'topbtn';
     document.getElementById('btn-panel').textContent = '🔒 Deadline';
+    document.getElementById('btn-tasks').style.display = 'none';
     return;
   }
   const user = auth.currentUser;
@@ -447,12 +485,14 @@ function renderWhoBar() {
 
   document.getElementById('btn-panel').className = 'topbtn' + (isAdmin ? ' admin-on' : '');
   document.getElementById('btn-panel').textContent = isAdmin ? '⚙️ Deadline (Admin)' : '🔒 Deadline';
+  document.getElementById('btn-tasks').style.display = isAdmin ? '' : 'none';
 }
 
 // ── FIREBASE DATA LISTENER ────────────────────────────────
 function startDataListener() {
   onValue(ref(db,'v3'), async snap => {
     FB = snap.val() || {};
+    applyTasks(FB.config && FB.config.tasks);
     if (!curMonth) {
       const d = new Date();
       const thisMonth = (d.getMonth()+1)+'/'+d.getFullYear();
@@ -787,6 +827,76 @@ document.getElementById('btn-hist').addEventListener('click', () => {
 });
 document.getElementById('btn-close-hist').addEventListener('click', ()=>document.getElementById('ov-hist').classList.remove('open'));
 document.getElementById('ov-hist').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.target.classList.remove('open'); });
+
+// ── TASK MANAGER (Quản lý công việc — admin) ──────────────
+let taskDraft = [];
+function groupIcon(g){ const t = TASKS.find(x=>x.g===g); return t ? t.ico : '📋'; }
+
+document.getElementById('btn-tasks').addEventListener('click', () => {
+  if (!meUser) { showToast('Vui lòng đăng nhập trước'); return; }
+  if (!isAdmin) { showToast('Chỉ Admin mới sửa được danh sách công việc'); return; }
+  taskDraft = TASKS.map((t,i)=>({id:t.id, g:t.g, ico:t.ico, p:t.p, n:t.n, ord:(t.ord??i)}));
+  renderTaskMgr();
+  document.getElementById('ov-tasks').classList.add('open');
+});
+document.getElementById('btn-close-tasks').addEventListener('click', ()=>document.getElementById('ov-tasks').classList.remove('open'));
+document.getElementById('btn-cancel-tasks').addEventListener('click', ()=>document.getElementById('ov-tasks').classList.remove('open'));
+document.getElementById('ov-tasks').addEventListener('click', e=>{ if(e.target===e.currentTarget) e.target.classList.remove('open'); });
+
+function syncTaskDraftFromDom(){
+  document.querySelectorAll('#tasks-body .tm-row').forEach(row=>{
+    const i = Number(row.dataset.idx);
+    if(!taskDraft[i]) return;
+    taskDraft[i].g = row.querySelector('.tm-g').value.trim();
+    taskDraft[i].p = row.querySelector('.tm-p').value.trim();
+    taskDraft[i].n = row.querySelector('.tm-n').value.trim();
+  });
+}
+function renderTaskMgr(){
+  const persons = allPersons();
+  const grps = [...new Set([...GROUPS, ...taskDraft.map(t=>t.g)])];
+  const dlP = `<datalist id="tm-persons">${persons.map(p=>`<option value="${p}">`).join('')}</datalist>`;
+  const dlG = `<datalist id="tm-groups">${grps.map(g=>`<option value="${g}">`).join('')}</datalist>`;
+  const rows = taskDraft.map((t,i)=>`
+    <div class="tm-row" data-idx="${i}" style="display:grid;grid-template-columns:1fr 110px 1.6fr 28px;gap:6px;align-items:center;padding:5px 0;border-bottom:1px solid var(--bd)">
+      <input class="tm-g" list="tm-groups" value="${(t.g||'').replace(/"/g,'&quot;')}" placeholder="Nhóm" style="font-size:12px;padding:5px 7px;border:1px solid var(--bd);border-radius:6px">
+      <input class="tm-p" list="tm-persons" value="${(t.p||'').replace(/"/g,'&quot;')}" placeholder="Người" style="font-size:12px;padding:5px 7px;border:1px solid var(--bd);border-radius:6px">
+      <input class="tm-n" value="${(t.n||'').replace(/"/g,'&quot;')}" placeholder="Tên công việc" style="font-size:12px;padding:5px 7px;border:1px solid var(--bd);border-radius:6px">
+      <button class="tm-del" data-idx="${i}" title="Xóa" style="border:none;background:none;color:var(--re);cursor:pointer;font-size:14px">✕</button>
+    </div>`).join('');
+  document.getElementById('tasks-body').innerHTML = `
+    ${dlP}${dlG}
+    <div style="font-size:12px;color:var(--t2);margin-bottom:10px;line-height:1.5">
+      Sửa nhóm / người phụ trách / tên công việc rồi bấm <b>Lưu danh sách</b>. Thay đổi áp dụng cho cả nhóm (dùng chung Firebase).
+      <br>⚠️ Xóa một công việc chỉ ẩn khỏi danh sách từ nay; lịch sử các tháng cũ vẫn giữ.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 110px 1.6fr 28px;gap:6px;font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--t3);padding-bottom:4px">
+      <span>Nhóm chi phí</span><span>Người</span><span>Công việc</span><span></span>
+    </div>
+    <div id="tm-rows">${rows}</div>
+    <button id="tm-add" style="margin-top:10px;font-size:12px;padding:6px 12px;border:1px dashed var(--gr);background:var(--grl);color:var(--grd);border-radius:7px;cursor:pointer">+ Thêm công việc</button>`;
+
+  document.getElementById('tm-add').addEventListener('click', ()=>{
+    syncTaskDraftFromDom();
+    const maxId = taskDraft.reduce((m,t)=>Math.max(m, Number(t.id)||0), 0);
+    taskDraft.push({id:maxId+1, g:GROUPS[0]||'Khác', ico:'📋', p:'', n:'', ord:taskDraft.length});
+    renderTaskMgr();
+  });
+  document.querySelectorAll('#tasks-body .tm-del').forEach(b=>{
+    b.addEventListener('click', ()=>{ syncTaskDraftFromDom(); taskDraft.splice(Number(b.dataset.idx),1); renderTaskMgr(); });
+  });
+}
+document.getElementById('btn-save-tasks').addEventListener('click', async () => {
+  syncTaskDraftFromDom();
+  const clean = taskDraft.filter(t=>t.n && t.g);   // bỏ dòng trống
+  if(!clean.length){ showToast('Danh sách trống'); return; }
+  const obj = {};
+  clean.forEach((t,i)=>{ obj[tkey(t.id)] = {id:Number(t.id), g:t.g, ico:groupIcon(t.g), p:t.p, n:t.n, ord:i}; });
+  await set(ref(db,'v3/config/tasks'), obj);
+  showToast('Đã lưu danh sách công việc ✓');
+  document.getElementById('ov-tasks').classList.remove('open');
+  // onValue sẽ tự nạp lại TASKS + render
+});
 
 // ── TOAST ─────────────────────────────────────────────────
 function showToast(msg) {

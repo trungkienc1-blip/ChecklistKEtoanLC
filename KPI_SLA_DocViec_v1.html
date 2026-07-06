@@ -1,0 +1,1636 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KPI SLA theo nhóm chi phí &amp; Đốc việc</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --navy:#16324a; --navy-deep:#0e2436; --accent:#2f7d6e; --accent-soft:#e3f1ed;
+    --amber:#b8841a; --amber-soft:#fdf2dd; --orange:#c2570f; --orange-soft:#fbe7d8;
+    --red:#a32626; --red-soft:#fbe2e2; --ink:#1c2a32; --ink-dim:#5b6b73;
+    --line:#d9e1e3; --paper:#f6f4ef; --card:#ffffff; --violet:#6d4fa3; --violet-soft:#ece5f7;
+  }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{font-family:"Source Sans Pro","Segoe UI",-apple-system,sans-serif;background:var(--paper);color:var(--ink);line-height:1.45}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 24px 60px}
+  .masthead{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;border-bottom:3px solid var(--navy);padding-bottom:14px;margin-bottom:16px}
+  .masthead h1{font-family:"Source Serif Pro",Georgia,serif;font-size:24px;font-weight:700;color:var(--navy-deep);margin:0 0 2px}
+  .masthead .tag{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin-bottom:4px}
+  .masthead p{margin:0;font-size:13px;color:var(--ink-dim)}
+  .badge-date{font-family:Georgia,serif;font-size:13px;color:var(--ink-dim);white-space:nowrap}
+  .banner{background:var(--amber-soft);border:1px solid #e6c98a;color:#8a6010;border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+  .topbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+  .drop{border:1.5px dashed var(--line);border-radius:6px;padding:10px 18px;cursor:pointer;font-size:13px;color:var(--ink-dim);background:var(--card);transition:.15s}
+  .drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+  .fbadge{font-size:12px;background:var(--accent-soft);color:var(--accent);border:1px solid #bfe0d6;border-radius:14px;padding:3px 12px}
+  .stat-inline{font-size:12.5px;color:var(--ink-dim)}
+  .tabs{display:flex;gap:4px;border-bottom:2px solid var(--navy);margin-bottom:16px}
+  .tab{border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink-dim);padding:10px 20px;cursor:pointer;border-radius:6px 6px 0 0}
+  .tab.act{background:var(--navy);color:#fff}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px 18px;margin-bottom:14px}
+  .card-title{font-size:13px;font-weight:700;color:var(--navy-deep);margin-bottom:10px}
+  .cards-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-bottom:14px}
+  .pcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:6px;padding:10px 14px;cursor:pointer}
+  .pcard:hover{background:var(--accent-soft)}
+  .pcard.sel{outline:2px solid var(--accent)}
+  .pcard .nm{font-weight:700;font-size:13.5px}
+  .pcard .ln{font-size:11.5px;color:var(--ink-dim);margin-top:3px}
+  .pill{font-weight:700;font-size:11px;padding:2px 10px;border-radius:12px;white-space:nowrap;display:inline-block}
+  .p-ok{background:var(--accent-soft);color:var(--accent)}
+  .p-warn{background:var(--amber-soft);color:#8a6010}
+  .p-late{background:var(--orange-soft);color:#94440c}
+  .p-bad{background:var(--red-soft);color:var(--red)}
+  .p-b5{background:var(--violet-soft);color:var(--violet)}
+  .p-grey{background:#eee;color:#777}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  thead tr{background:var(--navy)}
+  thead th{padding:8px 10px;text-align:left;color:#fff;font-size:12px;white-space:nowrap;position:sticky;top:0}
+  tbody td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  tbody tr:nth-child(even){background:#fafaf8}
+  .tbl-scroll{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:5px}
+  .btn{border:none;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;padding:8px 15px;font-family:inherit}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-primary{background:var(--navy);color:#fff}
+  .btn-success{background:var(--accent);color:#fff}
+  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-dim)}
+  .btn-danger{background:var(--red-soft);color:var(--red);border:1px solid #e6a8a8}
+  select,input[type=text],input[type=number]{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}
+  input[type=number]{width:70px}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+  .mut{color:var(--ink-dim)} .mono{font-family:Consolas,monospace}
+  .num{text-align:right;font-family:Consolas,monospace}
+  .small{font-size:11px}
+  .grp-tag{font-size:11px;background:#eef2f4;border:1px solid var(--line);border-radius:10px;padding:1px 8px;white-space:nowrap}
+  .cfg-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:900px){.cfg-grid{grid-template-columns:1fr}}
+  .warnbadge{background:var(--red-soft);color:var(--red);font-size:10px;font-weight:700;border-radius:8px;padding:1px 7px;margin-left:5px}
+  .rowbtn{border:none;background:transparent;color:var(--red);cursor:pointer;font-size:13px}
+  .chip{font-size:12px;border:1px solid var(--line);border-radius:14px;padding:3px 12px;cursor:pointer;background:var(--card);color:var(--ink-dim)}
+  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .drill{background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:14px 16px;margin-bottom:14px}
+  .empty{text-align:center;color:var(--ink-dim);padding:26px;font-size:13px}
+  .bar-out{height:6px;background:#eee;border-radius:4px;overflow:hidden;min-width:70px}
+  .bar-in{height:100%;border-radius:4px}
+  footer.note{margin-top:26px;font-size:12px;color:var(--ink-dim);text-align:center;border-top:1px solid var(--line);padding-top:14px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="masthead">
+    <div>
+      <div class="tag">Kế toán · SLA theo nhóm chi phí</div>
+      <h1>KPI SLA &amp; Đốc việc hồ sơ</h1>
+      <p>Phân loại nhóm chi phí tự động · SLA riêng từng nhóm · Cảnh báo hồ sơ chờ B4 và quên chuyển B5 · KPI công bằng theo người thực duyệt</p>
+    </div>
+    <div class="badge-date" id="todayBadge"></div>
+  </div>
+
+  <div id="cfgBanner"></div>
+
+  <div class="topbar">
+    <div class="drop" id="drop">📂 Thả 1 file "Báo cáo các đề nghị chưa hoàn tất" (.xlsx) mới nhất — file mới sẽ THAY THẾ toàn bộ dữ liệu cũ, tự lưu lại qua các lần mở</div>
+    <input type="file" id="fileInput" accept=".xlsx" multiple style="display:none" />
+    <div id="fileBadges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+    <div class="stat-inline" id="statLine"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab act" data-tab="doc" onclick="switchTab('doc')">📋 Theo dõi công việc</button>
+    <button class="tab" data-tab="kpi" onclick="switchTab('kpi')">📊 KPI SLA</button>
+    <button class="tab" data-tab="tong" onclick="switchTab('tong')">🏆 KPI tổng hợp</button>
+    <button class="tab" data-tab="cfg" onclick="switchTab('cfg')">⚙️ Cấu hình</button>
+  </div>
+
+  <div id="tab-doc"></div>
+  <div id="tab-kpi" style="display:none"></div>
+  <div id="tab-tong" style="display:none"></div>
+  <div id="tab-cfg" style="display:none"></div>
+
+  <footer class="note">Cấu hình và dữ liệu lưu trên Firebase — mọi thành viên đều thấy cùng dữ liệu.</footer>
+</div>
+<div id="authBarrier" style="position:fixed;inset:0;background:#f4f3ef;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px">
+  <div style="width:28px;height:28px;border:3px solid #e2e0d8;border-top-color:#2d6a4f;border-radius:50%;animation:sp .8s linear infinite"></div>
+  <div id="authMsg" style="font-size:13px;color:#6b6960">Đang xác thực…</div>
+</div>
+
+<script>
+/* ════════════════ CẤU HÌNH MẶC ĐỊNH ════════════════ */
+const LS_KEY = 'kpi_sla_docviec_v1';
+
+const DEFAULT_CFG = {
+  groups: [
+    {id:'dien',    name:'HC: Tiền điện',      sla:2,  ov:4},
+    {id:'thuenha', name:'HC: Thuê nhà/kho',   sla:5,  ov:8},
+    {id:'vaccine', name:'HC Vaccine (TTTC)',  sla:5,  ov:8},
+    {id:'bo',      name:'Khối BO',            sla:10, ov:15},
+    {id:'csvc',    name:'CSVC + Xây dựng',    sla:10, ov:15},
+    {id:'ctp',     name:'Công tác phí',       sla:12, ov:18},
+    {id:'shop',    name:'CP Shop',            sla:15, ov:22},
+    {id:'gpp',     name:'PT Địa điểm (GPP)',  sla:20, ov:30},
+    {id:'mkt',     name:'CP MKT',             sla:27, ov:40},
+    {id:'khac',    name:'Khác (lead check)',  sla:12, ov:18},
+  ],
+  ctpSubs: [
+    {id:'ASM',     name:'CTP ASM',        person:''},
+    {id:'FTF',     name:'CTP Taskforce',  person:'Nhanntt'},
+    {id:'KSNB',    name:'CTP KSNB',       person:'Hanttn'},
+    {id:'BAOHONG', name:'CTP Báo Hồng',   person:'Hanttn'},
+    {id:'SUKIEN',  name:'CTP Sự kiện',    person:'Hanttn'},
+    {id:'LOC',     name:'CTP LOC',        person:'Hanttn'},
+    {id:'PTDD',    name:'CTP PTDD',       person:'Thydg'},
+    {id:'CHUNG',   name:'CTP chung',      person:''},
+  ],
+  // Quy tắc gán người cho hồ sơ chờ B4 — duyệt từ trên xuống, khớp rule đầu tiên
+  // region: '' = mọi vùng; dvPat/textPat: regex (không phân biệt hoa thường), '' = bỏ qua
+  assignRules: [
+    {group:'dien',    region:'HCM1', dvPat:'', textPat:'', person:''},
+    {group:'dien',    region:'HCM2', dvPat:'', textPat:'', person:''},
+    {group:'dien',    region:'MB1',  dvPat:'', textPat:'', person:''},
+    {group:'dien',    region:'MB2',  dvPat:'', textPat:'', person:''},
+    {group:'dien',    region:'MB',   dvPat:'', textPat:'', person:'Dinhvu'},
+    {group:'dien',    region:'HNI',  dvPat:'', textPat:'', person:'Dinhvu'},
+    {group:'dien',    region:'HCM',  dvPat:'', textPat:'', person:'Hoaitx'},
+    {group:'dien',    region:'MT',   dvPat:'', textPat:'', person:'Hanntn'},
+    {group:'dien',    region:'MD',   dvPat:'', textPat:'', person:'Hanntn'},
+    {group:'dien',    region:'MTAY', dvPat:'', textPat:'', person:'Hanntn'},
+    // thuenha vùng = người SHOP tự tạo phiếu thuê kho; phiếu HÀNH CHÍNH tạo -> creatorPerson ở trên
+    {group:'thuenha', region:'HCM1', dvPat:'', textPat:'', person:'Huongdb'},
+    {group:'thuenha', region:'HCM2', dvPat:'', textPat:'', person:'Kietpt'},
+    {group:'thuenha', region:'MB1',  dvPat:'', textPat:'', person:''},
+    {group:'thuenha', region:'MB2',  dvPat:'', textPat:'', person:''},
+    {group:'thuenha', region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
+    {group:'thuenha', region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuenha', region:'MB',   dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuenha', region:'MT',   dvPat:'', textPat:'', person:'Chilhk'},
+    {group:'thuenha', region:'MD',   dvPat:'', textPat:'', person:'Thydg'},
+    {group:'thuenha', region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'vaccine', region:'',     dvPat:'', textPat:'', person:'Ngocnd'},
+    {group:'csvc',    region:'',     dvPat:'', textPat:'xây dựng|xay dung|thi công|thi cong', person:'Huongdb'},
+    {group:'csvc',    region:'HNI',  dvPat:'', textPat:'', person:'Diepdt'},
+    {group:'csvc',    region:'MB',   dvPat:'', textPat:'', person:'Diepdt'},
+    {group:'csvc',    region:'MT',   dvPat:'', textPat:'', person:'Diepdt'},
+    {group:'csvc',    region:'MD',   dvPat:'', textPat:'', person:'Khangth'},
+    {group:'csvc',    region:'MTAY', dvPat:'', textPat:'', person:'Khangth'},
+    {group:'csvc',    region:'HCM',  dvPat:'', textPat:'', person:'Khangth'},
+    {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Hangttm'},
+    {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Hangttm'},
+    {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Hangttm'},
+    {group:'shop',    region:'MT',   dvPat:'', textPat:'', person:'Kietpt'},
+    {group:'shop',    region:'MB',   dvPat:'', textPat:'', person:'Kietpt'},
+    {group:'shop',    region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
+    {group:'mkt',     region:'',     dvPat:'', textPat:'^(FPR|TTTC)|phòng pr|truyền thông', person:'Hientlt'},
+    {group:'mkt',     region:'',     dvPat:'truyen thong|social',  textPat:'', person:'Hientlt'},
+    {group:'mkt',     region:'',     dvPat:'', textPat:'', person:'Tienpng'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'giám sát kinh doanh|giam sat kinh doanh|\\bRSM\\b|\\bPRSM\\b', person:'Nhanntt'},
+    {group:'ctp',     region:'',     dvPat:'', textPat:'^ASM', person:'Hanttn'},
+    {group:'gpp',     region:'',     dvPat:'', textPat:'^PTDD', person:'Thydg'},
+    {group:'gpp',     region:'',     dvPat:'', textPat:'', person:'Huongdb'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'internet|cước|cuoc', person:'Haoln11'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'kho tổng.*(hni|hà nội)|kho tong.*ha noi|KT[-_\\s]?(HNI|QM)', person:'China'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'hub.*(bắc|bac|hni)', person:'Huyennt'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'hành chính miền (nam|trung)|hanh chinh mien (nam|trung)', person:'Haoln11'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'hành chính miền bắc|hanh chinh mien bac', person:'Ngocnd'},
+    {group:'bo',      region:'',     dvPat:'nhan su|fshop', textPat:'', person:'Huongdb'},
+    {group:'bo',      region:'',     dvPat:'', textPat:'', person:'Thydu'},
+  ],
+  // CTP chung: phân tiếp theo Đơn vị (regex) → người
+  ctpDvRules: [
+    {dvPat:'ban kinh doanh|kinh doanh truc tuyen', person:'Nhanntt'},
+    {dvPat:'marketing|truyen thong',               person:'Hientlt'},
+    {dvPat:'dao tao',                              person:''},
+    {dvPat:'nhan su',                              person:''},
+  ],
+  // Người tạo → vùng (học từ dữ liệu thật, purity ~100%) — dùng khi nội dung không ghi vùng
+  creatorRegion: {
+    'huongdh2':'HNI','hangnn3':'MB2','traht10':'MB1','anhpn33':'MB',
+    'duyenntt29':'HCM1','trangntt204':'HCM2','tranghnt':'HCM1',
+    'thuynth17':'MT','hoangnx15':'MTAY','namnv92':'MD',
+  },
+  // Người tạo → người phụ trách CỐ ĐỊNH cho THUÊ NHÀ/KHO (ưu tiên cao nhất, ghi đè assignRules).
+  // Phiếu do HÀNH CHÍNH tạo -> người admin theo vùng (bảng này). Phiếu do SHOP tự tạo -> rule vùng
+  // thuenha (= người shop: HCM→Thydg, MD→Thydg, MTAY/HNI/MB→Lanntn). Chỉ áp cho thuenha, không áp dien.
+  creatorPerson: {
+    'duyenntt29':'Huongdb','tranghnt':'Huongdb','trangntt204':'Kietpt','huongdh2':'Kietpt',
+    'anhpn33':'Dinhvu','hangnn3':'Dinhvu','traht10':'Dinhvu',
+    'thuynth17':'Hanntn','hoangnx15':'Hanntn','namnv92':'Hanntn',
+  },
+  // Người tạo chuyên trách → người xử lý CỐ ĐỊNH cho MỌI nhóm (ưu tiên cao nhất).
+  // Học từ dữ liệu thật (purity ≥95%, ≥8 hồ sơ): các đầu mối tạo phiếu gộp cho 1 người.
+  creatorPersonAll: {
+    'duyenvtm7':'Thydu', 'nhungcth2':'Thydu', 'trunglt19':'Khangth', 'khuongn':'Khangth',
+  },
+  staff: [
+    {name:'Diepdt',  acc:'diepdt5',  team:'CP'}, {name:'Khangth', acc:'khangth4',  team:'CP'},
+    {name:'Huongdb', acc:'huongdb2', team:'CP'}, {name:'Thydg',   acc:'thydg',     team:'CP'},
+    {name:'Ngocnd',  acc:'ngocnd13', team:'CP'}, {name:'Dinhvu',  acc:'dinhvu',    team:'CP'},
+    {name:'Hoaitx',  acc:'hoaitx3',  team:'CP'}, {name:'Hanntn',  acc:'hanntn10',  team:'CP'},
+    {name:'Haoln11', acc:'haoln11',  team:'CP'}, {name:'Hientlt', acc:'hientlt3',  team:'CP'},
+    {name:'Tienpng', acc:'tienpng',  team:'CP'}, {name:'Hangttm', acc:'hangttm13', team:'CP'},
+    {name:'Kietpt',  acc:'kietpt20', team:'CP'}, {name:'Nhanntt', acc:'nhanntt51', team:'CP'},
+    {name:'Hanttn',  acc:'hanttn22', team:'CP'}, {name:'Huyennt', acc:'huyennt30', team:'CP'},
+    {name:'Thydu',   acc:'thydu',    team:'CP'}, {name:'Dungdp',  acc:'dungdp7',   team:'TT'},
+    {name:'Ngoclh',  acc:'ngoclh9',  team:'TT'}, {name:'Lanntn',  acc:'lanntn19',  team:'CP'},
+    {name:'Chilhk',  acc:'chilhk',   team:'CP'}, {name:'China',   acc:'china2',    team:'CP'},
+    {name:'Hungnm',  acc:'hungnm132',team:'CP'}, {name:'Lytt',    acc:'lytt9',     team:'CP'},
+  ],
+  excludeRecv: ['truongvn5','nhungmth5','huynhltn2'],
+  leadAcc: ['toantp2'],
+  leadName: 'Toantp (Lead)',
+  b5Days: 3,
+  warnPct: 70,
+  // Bộ chỉ tiêu KPI tổng hợp — mặc định giữ nguyên 7 chỉ tiêu KPI gốc (Team CP) để đối chiếu.
+  // type 'auto' lấy từ dữ liệu upload; 'manual' nhập tay theo quý. Trọng số (ts) tùy chỉnh trong Cấu hình.
+  kpiCriteria: [
+    {id:'c1', name:'Tỷ lệ hạch toán chính xác', ts:45, type:'manual', tv:98,  lower:false, unit:'%'},
+    {id:'c2', name:'SLA B3-B4 theo nhóm CP',    ts:15, type:'auto',   metric:'sla_rate',    tv:95,  lower:false, unit:'%'},
+    {id:'c3', name:'TB ngày so với SLA nhóm',   ts:5,  type:'auto',   metric:'avg_vs_sla',  tv:60,  lower:true,  unit:'%'},
+    {id:'c4', name:'Tuân thủ deadline báo cáo', ts:20, type:'manual', tv:100, lower:false, unit:'%'},
+    {id:'c5', name:'Tuân thủ phối hợp nội bộ',  ts:5,  type:'manual', tv:100, lower:false, unit:'%'},
+    {id:'c6', name:'Hồ sơ quá hạn nặng',        ts:10, type:'auto',   metric:'overdue_cnt', tv:0,   lower:true,  is_cnt:true, unit:'hs'},
+    {id:'c7', name:'Sáng kiến được áp dụng',    ts:0,  type:'manual', tv:1,   lower:false, bonus:true, unit:'sk'},
+  ],
+  // Bộ chỉ tiêu Team TT (thanh toán B7-B8) — theo KPI_TT gốc, đều nhập tay;
+  // SL hồ sơ B7-B8 hiển thị làm thông tin theo dõi (không tính điểm)
+  kpiCriteriaTT: [
+    {id:'t1', name:'Tỷ lệ sai sót thanh toán',           ts:25, type:'manual', tv:0.3, lower:true,  unit:'%'},
+    {id:'t2', name:'Độ chính xác hạch toán ngân hàng',   ts:25, type:'manual', tv:99.7,lower:false, unit:'%'},
+    {id:'t3', name:'Tuân thủ deadline báo cáo',          ts:25, type:'manual', tv:3,   lower:true,  unit:'%'},
+    {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100, lower:false, unit:'%'},
+    {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,   lower:false, bonus:true, unit:'sk'},
+  ],
+  cfgVer: 3,  // tăng khi đổi creatorRegion/assignRules mặc định để migration cập nhật vào config đã lưu
+};
+
+let CFG = null, cfgIsDefault = false;
+function loadCfg(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){ CFG = JSON.parse(raw); cfgIsDefault = false;
+      // bổ sung field mới nếu bản lưu cũ thiếu
+      for(const k of Object.keys(DEFAULT_CFG)) if(CFG[k]===undefined) CFG[k]=JSON.parse(JSON.stringify(DEFAULT_CFG[k]));
+      // migration: staff bản lưu cũ chưa có team
+      for(const s of CFG.staff) if(!s.team) s.team = ['dungdp7','ngoclh9'].includes(s.acc) ? 'TT' : 'CP';
+      migrateCfg();  // cập nhật quy tắc mặc định mới, GIỮ rule người dùng tự thêm
+      return; }
+  }catch(e){}
+  CFG = JSON.parse(JSON.stringify(DEFAULT_CFG));
+  cfgIsDefault = true;
+}
+// Cập nhật config đã lưu sang phiên bản quy tắc mới (chạy 1 lần theo cfgVer).
+// GIỮ NGUYÊN các rule người dùng tự thêm; chỉ cập nhật creatorRegion và bổ sung rule mặc định còn thiếu.
+function migrateCfg(){
+  const old = CFG.cfgVer || 1;
+  if(old >= DEFAULT_CFG.cfgVer) return;
+  // 1) creatorRegion: cập nhật nhãn vùng con mới (default ghi đè các key trùng, giữ key user thêm)
+  CFG.creatorRegion = {...CFG.creatorRegion, ...DEFAULT_CFG.creatorRegion};
+  // 2) assignRules: thêm các quy tắc mặc định còn thiếu (so khớp group+region+dvPat+textPat), không đụng rule đã có
+  const key = r => [r.group, r.region||'', r.dvPat||'', r.textPat||''].join('|');
+  const have = new Set((CFG.assignRules||[]).map(key));
+  for(const r of DEFAULT_CFG.assignRules) if(!have.has(key(r))) CFG.assignRules.push({...r});
+  CFG.cfgVer = DEFAULT_CFG.cfgVer;
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); }catch(e){}
+}
+let saveCfg = function(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); cfgIsDefault=false; renderBanner(); }catch(e){} };
+loadCfg();
+
+function renderBanner(){
+  document.getElementById('cfgBanner').innerHTML = cfgIsDefault
+    ? `<div class="banner">⚠️ Đang dùng <b>SLA tạm mặc định</b>. Hãy vào tab <b>⚙️ Cấu hình</b> đặt SLA cho từng nhóm (có nút gợi ý theo P75/P80/P90 từ dữ liệu thật) trước khi dùng kết quả KPI.</div>` : '';
+}
+
+/* ════════════════ PHÂN LOẠI NHÓM CHI PHÍ ════════════════ */
+const RX = {
+  ctp: /công tác phí|cong tac phi|báo hồng|bao hong|hỗ trợ bán hàng|ho tro ban hang|lệnh điều động|lenh dieu dong|tân asm|tan asm|ksnb/i,
+  dien: /tiền điện|tien dien|điện tay|dien tay|hoá đơn điện|hóa đơn điện|cp điện|chi phí điện|chi phi dien/i,
+  thuenha: /thuê nhà|thue nha|1422 thuê|thuê mặt bằng|tiền nhà|tien nha|thuê kho|thue kho/i,
+  mkt_dv: /marketing|truyen thong|khuyen mai|social/i,
+  gpp: /thủ tục gpp|tái thẩm định gpp|phát triển địa điểm|nộp phạt|nop phat|xử phạt|xu phat/i,
+  csvc_txt: /xây dựng|xay dung|sửa chữa|sua chua/i,
+  csvc_dv: /xay dung|csvc/i,
+  shop_txt: /trang trí tết|trang tri tet|thiện nguyện|thien nguyen|phát cháo|phat chao|phát cơm|phat com|bánh kẹo|banh keo/i,
+  bo_txt: /hub|kho tổng|kho tong|internet|cước|cuoc tra|văn phòng phẩm|nước uống|nuoc uong|chữ ký số|chu ky so|tổng đài|tong dai|án phí|an phi|ecom|call?og|khảo sát|khao sat|tiếp khách|tiep khach/i,
+  bo_dv: /phong hanh chinh|devops|he thong thong tin|ban nhan su|dao tao|phap che|dam bao chat luong|kvbo|hanh chinh mien/i,
+  shop_num: /\b(?:lc|vx)\s*-?\s*\d{4,6}\b/i,           // mã shop dạng số: "Lc 82733", "LC- 80755", "VX58048"
+  shop_kv: /^\(?(?:hcm|mb|md|mt)\d?\)?[_\-]?\s*\d{5}/i, // "(HCM2)_58144_", "HCM1-82520"
+};
+const BO_PREFIX  = ['ECOM','BOD','FTD','FAD','FAF','PTKD','KT','HUB13','FIM','NTLC','DVKT','LEG','TTVH','FCC','FQA'];
+const CTP_PREFIX = ['ASM','FTF','LOC','FHR'];
+
+function getPrefix(t){
+  const m = String(t).match(/^([A-Z0-9]{2,6})\s*[:\-_ ]/);
+  return m ? m[1] : '';
+}
+
+// return {group:'..', sub:null|'ASM'.., excluded:false}
+function classify(muc, dv){
+  const t = String(muc||''); const tl = t.toLowerCase();
+  const dvs = String(dv||''); const dvl = dvs.toLowerCase();
+  const px = getPrefix(t);
+  if(tl.includes('ctp_') || CTP_PREFIX.includes(px) || RX.ctp.test(tl) || /taskfore/.test(dvl))
+    return {group:'ctp', sub:ctpSub(t, tl, dvl), excluded:false};
+  if(RX.dien.test(tl))    return {group:'dien', sub:null, excluded:false};
+  if(RX.thuenha.test(tl)) return {group:'thuenha', sub:null, excluded:false};
+  if(dvl.includes('vx hanh chinh')) return {group:'vaccine', sub:null, excluded:false};
+  if(px==='FMK' || px==='FPR' || RX.mkt_dv.test(dvl)) return {group:'mkt', sub:null, excluded:false};
+  if(px==='PTDD' || dvl.includes('gpp') || dvl.includes('location') || RX.gpp.test(tl)) return {group:'gpp', sub:null, excluded:false};
+  if(px==='CSVC' || px==='GSXD' || RX.csvc_dv.test(dvl) || (RX.csvc_txt.test(tl) && RX.csvc_dv.test(dvl))) return {group:'csvc', sub:null, excluded:false};
+  if(/^(LC\d+|VX\d+)-/.test(t) || /(?:^|\.)(?:LC|VX)\s/.test(dvs) || RX.shop_num.test(tl) || RX.shop_kv.test(tl) || RX.shop_txt.test(tl)) return {group:'shop', sub:null, excluded:false};
+  if(BO_PREFIX.includes(px) || RX.bo_txt.test(tl) || RX.bo_dv.test(dvl)) return {group:'bo', sub:null, excluded:false};
+  return {group:'khac', sub:null, excluded:false};
+}
+
+function ctpSub(t, tl, dvl){
+  const px = getPrefix(t);
+  if(px==='ASM' || tl.includes('tân asm') || tl.includes('tan asm') || /\basm\b/.test(tl.slice(0,40))) return 'ASM';
+  if(px==='FTF' || tl.includes('taskforce') || tl.includes('taskfore') || dvl.includes('taskfore')) return 'FTF';
+  if(tl.includes('ksnb') || tl.includes('kiểm soát') || tl.includes('kiem soat')) return 'KSNB';
+  if(tl.includes('báo hồng') || tl.includes('bao hong') || tl.includes('báohồng')) return 'BAOHONG';
+  if(px==='LOC') return 'LOC';
+  if(tl.includes('ptdd')) return 'PTDD';
+  if(tl.includes('sự kiện') || tl.includes('su kien')) return 'SUKIEN';
+  return 'CHUNG';
+}
+
+/* ── Vùng ── */
+const PROV = {
+  HNI:['HNI'],
+  MB:['HPG','QNH','HDG','HYN','BNH','BGG','LSN','CBG','TQG','HGG','LCI','YBI','PTO','VPC','TNN','BKN','SLA','DBN','LCU','HBH','NBH','NDH','TBH','HNM'],
+  MT:['DAG','QNM','QNI','BDH','PYN','KHA','GLI','KTM','DLK','HTH','NAN','QBH','QTI','TTH','THA'],
+  MD:['DNI','BRV','BDG','BPC','TNH','LAN'],
+  MTAY:['AGG','CTO','DTP','KGG','VLG','TGG','BTE','CMU','STG','BLU','TVH','LDG'],
+  HCM:['HCM','SGN'],
+};
+const REGION_LABEL = {HNI:'Hà Nội', MB:'Miền Bắc', MB1:'Miền Bắc 1', MB2:'Miền Bắc 2', MT:'Miền Trung', MD:'Miền Đông', MTAY:'Miền Tây', HCM:'HCM', HCM1:'HCM 1', HCM2:'HCM 2'};
+
+function detectRegion(muc, dv, creator, group){
+  const cr = String(creator||'').split('@')[0].trim().toLowerCase();
+  // Thuê nhà & điện: NGƯỜI TẠO quyết định vùng (ưu tiên hơn mã shop trong nội dung),
+  // vì 1 admin tạo hồ sơ cho nhiều shop khác tỉnh nhưng do 1 kế toán theo khu xử lý.
+  if((group==='thuenha' || group==='dien') && cr && CFG.creatorRegion[cr]) return CFG.creatorRegion[cr];
+  const t = (String(muc||'') + ' ' + String(dv||'')).toLowerCase();
+  if(/hni\b|hà nội|ha noi/.test(t)) return 'HNI';
+  if(/miền bắc|mien bac/.test(t)) return 'MB';
+  if(/miền trung|mien trung/.test(t)) return 'MT';
+  if(/miền đông|mien dong/.test(t)) return 'MD';
+  if(/miền tây|mien tay/.test(t)) return 'MTAY';
+  if(/hcm|hồ chí minh|ho chi minh|sài gòn|sai gon/.test(t)) return 'HCM';
+  let code = null;
+  let m = String(muc||'').match(/(?:LC|VX)\d*[-\s,]*-?\s*([A-Z]{3})\b/);
+  if(m) code = m[1];
+  if(!code){ m = String(dv||'').match(/(?:^|\.)(?:LC|VX)\s+([A-Z]{3})\b/); if(m) code = m[1]; }
+  if(code){ for(const [reg, arr] of Object.entries(PROV)) if(arr.includes(code)) return reg; }
+  if(cr && CFG.creatorRegion[cr]) return CFG.creatorRegion[cr];
+  return null;
+}
+
+/* ── Gán người phụ trách (hồ sơ chờ B4) ── */
+// Dò bảng "Quy tắc gán người" chung (áp dụng cho MỌI nhóm, kể cả Công tác phí)
+function matchAssignRules(rec){
+  for(const r of CFG.assignRules){
+    if(r.group !== rec.group) continue;
+    if(r.region && r.region !== rec.region) continue;
+    try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) continue; }catch(e){ continue; }
+    try{ if(r.textPat && !new RegExp(r.textPat,'i').test(rec.muc)) continue; }catch(e){ continue; }
+    return r.person || null;
+  }
+  return null;
+}
+function assignPerson(rec){
+  // Ưu tiên cao nhất: người tạo cố định (creatorPerson) cho thuenha/dien —
+  // ghi đè assignRules vì phiếu do admin tạo gộp không đi theo logic vùng thông thường.
+  const cr = String(rec.creator||'').split('@')[0].trim().toLowerCase();
+  // creatorPersonAll: người tạo chuyên trách (admin kho tổng, GSXD...) -> người xử lý CỐ ĐỊNH, mọi nhóm
+  if(CFG.creatorPersonAll && CFG.creatorPersonAll[cr]) return CFG.creatorPersonAll[cr];
+  if(rec.group==='thuenha' && CFG.creatorPerson && CFG.creatorPerson[cr]) return CFG.creatorPerson[cr];
+  if(rec.group === 'ctp'){
+    // 1) nhóm con CTP có người phụ trách
+    if(rec.sub && rec.sub !== 'CHUNG'){
+      const s = CFG.ctpSubs.find(x=>x.id===rec.sub);
+      if(s && s.person) return s.person;
+    }
+    // 2) quy tắc CTP theo đơn vị (ctpDvRules) — CHỈ gán khi đã điền người;
+    //    entry để trống người coi như chưa cấu hình → bỏ qua để rule chung (bước 3) được chạy tiếp
+    for(const r of CFG.ctpDvRules){
+      try{ if(r.dvPat && r.person && new RegExp(r.dvPat,'i').test(rec.dv)) return r.person; }catch(e){}
+    }
+    // 3) quy tắc gán chung (cho phép rule tự thêm áp dụng cho CTP CHUNG)
+    const byRule = matchAssignRules(rec);
+    if(byRule) return byRule;
+    // 4) người mặc định cho CTP chung
+    const chung = CFG.ctpSubs.find(x=>x.id==='CHUNG');
+    return (chung && chung.person) ? chung.person : null;
+  }
+  return matchAssignRules(rec);
+}
+
+/* ════════════════ PARSE EXCEL ════════════════ */
+const MONTHS_MAP = {jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11};
+function parseApprDate(s){
+  if(!s || typeof s !== 'string') return null;
+  const m = s.trim().match(/^(\d+)-([A-Za-z]+)-(\d+)\s+(\d+):(\d+):(\d+)\s+([AaPp][Mm])$/);
+  if(!m) return null;
+  const mi = MONTHS_MAP[m[2].toLowerCase().slice(0,3)];
+  if(mi===undefined) return null;
+  let h = parseInt(m[4],10);
+  if(m[7].toLowerCase()==='pm' && h<12) h+=12;
+  if(m[7].toLowerCase()==='am' && h===12) h=0;
+  return new Date(parseInt(m[3]), mi, parseInt(m[1]), h, parseInt(m[5]), parseInt(m[6]));
+}
+
+let STORE = new Map();   // mã đề nghị -> record
+let FILES = [];          // {name, rows}
+let DERIVED = null;      // kết quả xử lý
+let dataSavedAt = null;
+
+/* ── IndexedDB: giữ dữ liệu qua F5 ── */
+function idbOpen(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open('kpi_sla_docviec', 1);
+    r.onupgradeneeded = () => r.result.createObjectStore('kv');
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbSet(key, val){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').put(val, key);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const rq = db.transaction('kv','readonly').objectStore('kv').get(key);
+    rq.onsuccess = () => res(rq.result); rq.onerror = () => rej(rq.error);
+  });
+}
+async function idbDel(key){
+  const db = await idbOpen();
+  return new Promise((res,rej)=>{
+    const tx = db.transaction('kv','readwrite');
+    tx.objectStore('kv').delete(key);
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function saveData(){
+  try{
+    dataSavedAt = new Date().toISOString();
+    await idbSet('data', {files: FILES, records: [...STORE.values()], savedAt: dataSavedAt});
+  }catch(e){ console.warn('Không lưu được dữ liệu:', e); }
+}
+async function restoreData(){
+  try{
+    const d = await idbGet('data');
+    if(!d || !d.records || !d.records.length) return false;
+    STORE = new Map(d.records.map(r=>[r.ma, r]));
+    FILES = d.files || [];
+    dataSavedAt = d.savedAt;
+    recompute(); renderFileBadges(); renderAll();
+    return true;
+  }catch(e){ console.warn('Không khôi phục được dữ liệu:', e); return false; }
+}
+async function clearData(){
+  if(!confirm('Xóa toàn bộ dữ liệu báo cáo đã lưu? (Cấu hình và điểm nhập tay vẫn giữ nguyên)')) return;
+  await idbDel('data');
+  STORE = new Map(); FILES = []; DERIVED = null; dataSavedAt = null;
+  kpiMonths = null; kpiDrill = ''; tongQuy = null;
+  renderFileBadges(); renderStatLine(); renderAll();
+}
+
+/* ── Tự nạp báo cáo do script auto tải về (report_latest.xlsx cùng thư mục) ── */
+const AUTO_FILE = 'report_latest.xlsx';
+const AUTO_MTIME_KEY = 'kpi_auto_mtime';
+async function autoLoadLatest(force){
+  // Chỉ chạy khi mở qua http(s) — file:// không fetch được file cạnh nó
+  if(!/^https?:$/.test(location.protocol)){
+    if(force) alert('Tính năng tự nạp chỉ chạy khi mở tool qua start_kpi.bat (máy chủ cục bộ). Hiện đang mở bằng file trực tiếp.');
+    return false;
+  }
+  try{
+    const head = await fetch(AUTO_FILE, {method:'HEAD', cache:'no-store'});
+    if(!head.ok){ if(force) alert('Chưa thấy file '+AUTO_FILE+' trong thư mục. Hãy chạy tải báo cáo trước.'); return false; }
+    const mtime = head.headers.get('Last-Modified') || '';
+    if(!force && mtime && mtime === localStorage.getItem(AUTO_MTIME_KEY)) return false; // đã nạp bản này rồi
+    const buf = await (await fetch(AUTO_FILE, {cache:'no-store'})).arrayBuffer();
+    const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
+    STORE = new Map(); FILES = [];
+    const n = ingest(rows);
+    FILES.push({name:AUTO_FILE+' (tự tải)', rows:n});
+    if(mtime) localStorage.setItem(AUTO_MTIME_KEY, mtime);
+    kpiMonths=null; tongQuy=null;
+    recompute(); renderFileBadges(); renderAll(); saveData(); if(typeof fbPushData==='function') fbPushData();
+    showToast('🔄 Đã nạp báo cáo tự động'+(mtime?' · cập nhật '+new Date(mtime).toLocaleString('vi-VN'):''), 3500);
+    return true;
+  }catch(e){ if(force) alert('Lỗi nạp báo cáo tự động: '+e.message); return false; }
+}
+
+function handleFiles(list){
+  const files = Array.from(list).filter(f=>/\.xlsx$/i.test(f.name));
+  if(!files.length) return;
+  // File mới THAY THẾ toàn bộ dữ liệu cũ (chọn nhiều file trong 1 lần thì gộp trong lần đó)
+  STORE = new Map(); FILES = [];
+  let done = 0;
+  for(const f of files){
+    const reader = new FileReader();
+    reader.onload = e => {
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, {header:1, defval:null});
+        const n = ingest(rows);
+        FILES.push({name:f.name, rows:n});
+      }catch(err){ alert('Lỗi đọc file '+f.name+': '+err.message); }
+      done++;
+      if(done===files.length){ kpiMonths=null; tongQuy=null; recompute(); renderFileBadges(); renderAll(); saveData(); if(typeof fbPushData==='function') fbPushData(); }
+    };
+    reader.readAsArrayBuffer(f);
+  }
+}
+
+function ingest(rows){
+  if(!rows || rows.length<2) return 0;
+  const headers = (rows[0]||[]).map(h=>h?String(h).trim():'');
+  const iDv   = headers.indexOf('Đơn vị');
+  const iLoai = headers.indexOf('Loại đề nghị');
+  const iMa   = headers.indexOf('Mã đề nghị');
+  const iMuc  = headers.indexOf('Mục đích chi phí');
+  const iTien = headers.indexOf('Tổng tiền');
+  const iFlow = headers.indexOf('Quy trình phê duyệt');
+  const iNt   = headers.indexOf('Người tạo');
+  const iPd   = headers.indexOf('Phê duyệt');
+  if(iMa===-1 || iPd===-1) { alert('File thiếu cột "Mã đề nghị" hoặc "Phê duyệt".'); return 0; }
+  let n=0;
+  for(let i=1;i<rows.length;i++){
+    const row = rows[i];
+    if(!row || row[iMa]==null) continue;
+    const steps = [];
+    for(let c=iPd;c<row.length;c++){
+      const v = row[c];
+      if(!v || typeof v!=='string' || v.split('|').length!==4) continue;
+      const [email, status, dt, role] = v.split('|');
+      const d = parseApprDate(dt);
+      if(d) steps.push({acc:email.split('@')[0].trim().toLowerCase(), status:status.trim(), date:d, role:role.trim().toUpperCase()});
+    }
+    STORE.set(String(row[iMa]), {
+      ma:String(row[iMa]),
+      dv: iDv>=0 ? String(row[iDv]||'') : '',
+      loai: iLoai>=0 ? String(row[iLoai]||'') : '',
+      muc: iMuc>=0 ? String(row[iMuc]||'') : '',
+      tien: iTien>=0 ? (row[iTien]||0) : 0,
+      flow: iFlow>=0 ? String(row[iFlow]||'') : '',
+      creator: iNt>=0 ? String(row[iNt]||'') : '',
+      steps,
+    });
+    n++;
+  }
+  return n;
+}
+
+/* ════════════════ TÍNH TOÁN ════════════════ */
+function grpById(id){ return CFG.groups.find(g=>g.id===id) || {name:id, sla:12, ov:18}; }
+function staffName(acc){
+  const s = CFG.staff.find(x=>x.acc===acc);
+  if(s) return s.name;
+  if(CFG.leadAcc.includes(acc)) return CFG.leadName;
+  return null;
+}
+
+function recompute(){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const D = {pendA:[], pendB:[], done:[], doneTT:[], excludedRecv:0, total:STORE.size, months:new Set()};
+  for(const rec of STORE.values()){
+    const cls = classify(rec.muc, rec.dv);
+    rec.group = cls.group; rec.sub = cls.sub;
+    rec.region = detectRegion(rec.muc, rec.dv, rec.creator, rec.group);
+    const ap = rec.steps.filter(s=>s.status==='APPROVED');
+    const mgrs = ap.filter(s=>s.role==='MANAGER');
+    const rcvs = ap.filter(s=>s.role==='RECEIVER');
+    const mgrDate = mgrs.length ? new Date(Math.max(...mgrs.map(s=>s.date))) : null;
+    const rcv = rcvs.length ? rcvs.reduce((a,b)=>a.date<b.date?a:b) : null;
+    const g = grpById(rec.group);
+
+    // Team TT: hồ sơ B7-B8 (ACCOUNTANTERP -> ACCOUNTANTBANK) — theo dõi số lượng xử lý
+    const erps = ap.filter(s=>s.role==='ACCOUNTANTERP');
+    const banks = ap.filter(s=>s.role==='ACCOUNTANTBANK');
+    if(erps.length && banks.length){
+      const erpD = erps.reduce((a,b)=>a.date<b.date?a:b).date;
+      const bank = banks.reduce((a,b)=>a.date<b.date?a:b);
+      const dTT = (bank.date - erpD)/864e5;
+      if(dTT>=0 && dTT<=365){
+        D.doneTT.push({acc:bank.acc, month:bank.date.toISOString().slice(0,7), days:dTT});
+      }
+    }
+
+    if(mgrDate && !rcv){
+      const days = (today - new Date(mgrDate.getFullYear(),mgrDate.getMonth(),mgrDate.getDate()))/864e5;
+      let st;
+      if(days > g.ov) st = 'bad'; else if(days > g.sla) st = 'late';
+      else if(days >= g.sla*CFG.warnPct/100) st = 'warn'; else st = 'ok';
+      D.pendA.push({ma:rec.ma, group:rec.group, sub:rec.sub, region:rec.region, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, mgrDate:mgrDate.toISOString(), days, st, person: assignPerson(rec), sla:g.sla, ov:g.ov});
+    }
+    if(rcv){
+      if(CFG.excludeRecv.includes(rcv.acc)){ D.excludedRecv++; continue; }
+      const sorted = [...ap].sort((a,b)=>a.date-b.date);
+      if(sorted.length && sorted[sorted.length-1].role==='RECEIVER'){
+        const days = (today - new Date(rcv.date.getFullYear(),rcv.date.getMonth(),rcv.date.getDate()))/864e5;
+        D.pendB.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, acc:rcv.acc, name:staffName(rcv.acc)||rcv.acc, late: days > CFG.b5Days});
+      }
+      if(mgrDate && rcv.date >= mgrDate){
+        const days = (rcv.date - mgrDate)/864e5;
+        if(days<=365){
+          const month = rcv.date.toISOString().slice(0,7);
+          D.months.add(month);
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, days, acc:rcv.acc, month, ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+        }
+      }
+    }
+  }
+  DERIVED = D;
+  // Tháng mới xuất hiện (upload thêm file) tự được chọn vào bộ lọc KPI
+  if(kpiMonths!==null) for(const m of D.months) kpiMonths.add(m);
+  renderStatLine();
+}
+
+function pctile(arr, p){
+  if(!arr.length) return null;
+  const a = [...arr].sort((x,y)=>x-y);
+  const idx = (a.length-1)*p;
+  const lo = Math.floor(idx), hi = Math.ceil(idx);
+  return a[lo] + (a[hi]-a[lo])*(idx-lo);
+}
+
+/* ════════════════ UI CHUNG ════════════════ */
+function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtD(d){ return d==null?'–':d.toLocaleDateString('vi-VN'); }
+function switchTab(t){
+  for(const b of document.querySelectorAll('.tab')) b.classList.toggle('act', b.dataset.tab===t);
+  for(const id of ['doc','kpi','tong','cfg']) document.getElementById('tab-'+id).style.display = id===t?'':'none';
+  if(t==='doc') renderDoc(); else if(t==='kpi') renderKpi(); else if(t==='tong') renderTong(); else renderCfg();
+}
+function renderFileBadges(){
+  const saved = dataSavedAt ? `<span class="fbadge" style="background:#eef2f4;color:var(--ink-dim);border-color:var(--line)">💾 lưu lúc ${new Date(dataSavedAt).toLocaleString('vi-VN')}</span>` : '';
+  const isAdmin = (typeof USER_ROLE!=='undefined' && USER_ROLE==='admin');
+  const clearBtn = (FILES.length && isAdmin) ? `<button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="clearData()" title="Xóa dữ liệu báo cáo đã lưu">🗑</button>` : '';
+  const reloadBtn = isAdmin ? `<button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="autoLoadLatest(true)" title="Nạp file report_latest.xlsx mới nhất do script tải về">🔄 Nạp báo cáo mới nhất</button>` : '';
+  document.getElementById('fileBadges').innerHTML =
+    FILES.map(f=>`<span class="fbadge">✓ ${esc(f.name)} · ${f.rows.toLocaleString('vi')} dòng</span>`).join('') + saved + reloadBtn + clearBtn;
+}
+function renderStatLine(){
+  if(!DERIVED){ document.getElementById('statLine').textContent=''; return; }
+  document.getElementById('statLine').innerHTML =
+    `Tổng <b>${DERIVED.total.toLocaleString('vi')}</b> hồ sơ · `+
+    `<b style="color:var(--orange)">${DERIVED.pendA.length.toLocaleString('vi')}</b> chờ B4 · `+
+    `<b style="color:var(--violet)">${DERIVED.pendB.length.toLocaleString('vi')}</b> quên B5 · `+
+    `<b style="color:var(--accent)">${DERIVED.done.length.toLocaleString('vi')}</b> đã xong B4 · `+
+    `loại team khác: ${DERIVED.excludedRecv.toLocaleString('vi')}`;
+}
+function renderAll(){
+  renderBanner();
+  const act = document.querySelector('.tab.act')?.dataset.tab || 'doc';
+  switchTab(act);
+}
+
+const STATUS_META = {
+  ok:  {lbl:'Còn hạn',       cls:'p-ok'},
+  warn:{lbl:'Sắp trễ',       cls:'p-warn'},
+  late:{lbl:'Trễ SLA',       cls:'p-late'},
+  bad: {lbl:'Quá hạn nặng',  cls:'p-bad'},
+};
+
+/* ════════════════ TAB ĐỐC VIỆC ════════════════ */
+let docFilter = {person:'', group:'', type:'', status:''};
+function renderDoc(){
+  const el = document.getElementById('tab-doc');
+  if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
+  const A = DERIVED.pendA, B = DERIVED.pendB;
+
+  // cards theo người
+  const per = {};
+  for(const p of A){
+    const key = p.person || '— Chưa gán (lead check)';
+    (per[key] = per[key] || {a:0,warn:0,late:0,bad:0,b:0,bLate:0});
+    per[key].a++;
+    if(p.st==='warn') per[key].warn++;
+    if(p.st==='late') per[key].late++;
+    if(p.st==='bad') per[key].bad++;
+  }
+  for(const p of B){
+    const key = p.name;
+    (per[key] = per[key] || {a:0,warn:0,late:0,bad:0,b:0,bLate:0});
+    per[key].b++; if(p.late) per[key].bLate++;
+  }
+  const names = Object.keys(per).sort((x,y)=>{
+    const ux = x.startsWith('—'), uy = y.startsWith('—');
+    if(ux!==uy) return ux?-1:1;
+    return (per[y].late+per[y].bad+per[y].bLate)-(per[x].late+per[x].bad+per[x].bLate);
+  });
+
+  let cards = names.map(n=>{
+    const c = per[n];
+    const sel = docFilter.person===n?' sel':'';
+    return `<div class="pcard${sel}" onclick="docSelPerson('${esc(n).replace(/'/g,"\\'")}')">
+      <div class="nm">${esc(n)} ${n.startsWith('—')?'<span class="warnbadge">cần lead</span>':''}</div>
+      <div class="ln">Chờ B4: <b>${c.a}</b>
+        ${c.warn?`<span class="pill p-warn">${c.warn} sắp trễ</span>`:''}
+        ${c.late?`<span class="pill p-late">${c.late} trễ</span>`:''}
+        ${c.bad?`<span class="pill p-bad">${c.bad} quá hạn</span>`:''}</div>
+      ${c.b?`<div class="ln">Quên chuyển B5: <b>${c.b}</b> ${c.bLate?`<span class="pill p-b5">${c.bLate} quá ${CFG.b5Days} ngày</span>`:''}</div>`:''}
+    </div>`;
+  }).join('');
+
+  // rows
+  const rowsA = A.filter(p=>{
+    const key = p.person || '— Chưa gán (lead check)';
+    if(docFilter.person && key!==docFilter.person) return false;
+    if(docFilter.group && p.group!==docFilter.group) return false;
+    if(docFilter.type && docFilter.type!=='A') return false;
+    if(docFilter.status && p.st!==docFilter.status) return false;
+    return true;
+  }).sort((x,y)=>y.days-x.days);
+  const rowsB = B.filter(p=>{
+    if(docFilter.person && p.name!==docFilter.person) return false;
+    if(docFilter.group && p.group!==docFilter.group) return false;
+    if(docFilter.type && docFilter.type!=='B') return false;
+    if(docFilter.status) return false;
+    return true;
+  }).sort((x,y)=>y.days-x.days);
+
+  const grpOpts = '<option value="">— Tất cả nhóm —</option>'+CFG.groups.map(g=>`<option value="${g.id}" ${docFilter.group===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
+  const stOpts = '<option value="">— Trạng thái —</option>'+Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}" ${docFilter.status===k?'selected':''}>${v.lbl}</option>`).join('');
+
+  const trA = rowsA.map(p=>{
+    const g = grpById(p.group); const sm = STATUS_META[p.st];
+    return `<tr>
+      <td class="mono">${esc(p.ma)}</td>
+      <td><span class="pill p-grey">Chờ B4</span></td>
+      <td>${esc(p.person||'— Chưa gán')}</td>
+      <td><span class="grp-tag">${esc(g.name)}${p.sub?' · '+esc(p.sub):''}</span></td>
+      <td>${esc(String(p.muc).slice(0,90))}</td>
+      <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+      <td class="num">${p.days.toFixed(0)}</td>
+      <td class="num mut">${p.sla}</td>
+      <td><span class="pill ${sm.cls}">${sm.lbl}</span></td>
+    </tr>`;
+  }).join('');
+  const trB = rowsB.map(p=>`<tr>
+      <td class="mono">${esc(p.ma)}</td>
+      <td><span class="pill p-b5">Quên B5</span></td>
+      <td>${esc(p.name)}</td>
+      <td><span class="grp-tag">${esc(grpById(p.group).name)}</span></td>
+      <td>${esc(String(p.muc).slice(0,90))}</td>
+      <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+      <td class="num">${p.days.toFixed(0)}</td>
+      <td class="num mut">${CFG.b5Days}</td>
+      <td>${p.late?'<span class="pill p-b5">Cần chuyển Chief</span>':'<span class="pill p-ok">Còn hạn</span>'}</td>
+    </tr>`).join('');
+
+  // Thanh tổng quan cả nhóm (luôn tính trên toàn bộ, không phụ thuộc bộ lọc)
+  const cA = {ok:0,warn:0,late:0,bad:0};
+  for(const p of A) cA[p.st]++;
+  const bLateAll = B.filter(p=>p.late).length;
+  const teamBar = `
+    <div class="card" style="border-top:3px solid var(--navy);display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:12px 18px">
+      <div><div class="small mut" style="text-transform:uppercase;letter-spacing:.05em">Cả nhóm cần xử lý</div>
+        <div style="font-family:Georgia,serif;font-size:26px;font-weight:700">${(A.length+B.length).toLocaleString('vi')} <span style="font-size:13px;font-weight:400;color:var(--ink-dim)">hồ sơ</span></div></div>
+      <div style="border-left:1px solid var(--line);padding-left:22px">
+        <div class="small mut">Chờ duyệt B4: <b style="color:var(--ink)">${A.length.toLocaleString('vi')}</b></div>
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="pill p-ok">${cA.ok} còn hạn</span>
+          <span class="pill p-warn">${cA.warn} sắp trễ</span>
+          <span class="pill p-late">${cA.late} trễ SLA</span>
+          <span class="pill p-bad">${cA.bad} quá hạn nặng</span>
+        </div></div>
+      <div style="border-left:1px solid var(--line);padding-left:22px">
+        <div class="small mut">Đã B4, quên chuyển B5: <b style="color:var(--ink)">${B.length.toLocaleString('vi')}</b></div>
+        <div style="margin-top:4px"><span class="pill p-b5">${bLateAll} quá ${CFG.b5Days} ngày — cần chuyển Chief</span></div></div>
+    </div>`;
+
+  el.innerHTML = teamBar + `
+    <div class="cards-row">${cards || '<div class="empty">Không có hồ sơ chờ.</div>'}</div>
+    <div class="card">
+      <div class="filters">
+        <b style="font-size:13px">Chi tiết (${rowsA.length+rowsB.length} hồ sơ)</b>
+        <select onchange="docFilter.type=this.value;renderDoc()">
+          <option value="">— Loại cảnh báo —</option>
+          <option value="A" ${docFilter.type==='A'?'selected':''}>Chờ duyệt B4</option>
+          <option value="B" ${docFilter.type==='B'?'selected':''}>Quên chuyển B5</option>
+        </select>
+        <select onchange="docFilter.group=this.value;renderDoc()">${grpOpts}</select>
+        <select onchange="docFilter.status=this.value;renderDoc()">${stOpts}</select>
+        ${docFilter.person?`<span class="chip on" onclick="docSelPerson('')">${esc(docFilter.person)} ✕</span>`:''}
+        <span style="flex:1"></span>
+        <button class="btn btn-success" onclick="exportDoc()">⬇ Xuất Excel</button>
+      </div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Mã ĐN</th><th>Loại</th><th>Người phụ trách</th><th>Nhóm CP</th><th>Nội dung</th><th>Đơn vị</th><th>Ngày chờ</th><th>SLA</th><th>Trạng thái</th></tr></thead>
+        <tbody>${trA+trB || '<tr><td colspan="9" class="empty">Không có hồ sơ khớp bộ lọc.</td></tr>'}</tbody>
+      </table></div>
+    </div>`;
+}
+function docSelPerson(n){ docFilter.person = (docFilter.person===n)?'':n; renderDoc(); }
+
+/* ════════════════ TAB KPI ════════════════ */
+let kpiMonths = null;  // null = tất cả
+let kpiDrill = '';
+function renderKpi(){
+  const el = document.getElementById('tab-kpi');
+  if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
+  const allMonths = [...DERIVED.months].sort();
+  if(kpiMonths===null) kpiMonths = new Set(allMonths);
+  const rows = DERIVED.done.filter(d=>kpiMonths.has(d.month));
+
+  // theo người
+  const per = {};
+  for(const d of rows){
+    (per[d.acc] = per[d.acc] || {n:0, ok:0, over:0, days:[], byGrp:{}});
+    const p = per[d.acc];
+    p.n++; if(d.ok) p.ok++; if(d.over) p.over++;
+    p.days.push(d.days);
+    (p.byGrp[d.group] = p.byGrp[d.group] || {n:0,ok:0});
+    p.byGrp[d.group].n++; if(d.ok) p.byGrp[d.group].ok++;
+  }
+  const known = [], unknown = [], lead = [];
+  for(const [acc,p] of Object.entries(per)){
+    const entry = {acc, ...p, rate: p.n?p.ok/p.n*100:0, med: pctile(p.days,.5)};
+    if(CFG.leadAcc.includes(acc)) lead.push(entry);
+    else if(staffName(acc)) known.push(entry);
+    else unknown.push(entry);
+  }
+  known.sort((a,b)=>b.rate-a.rate); unknown.sort((a,b)=>b.n-a.n);
+
+  const mChips = allMonths.map(m=>`<span class="chip ${kpiMonths.has(m)?'on':''}" onclick="kpiToggleMonth('${m}')">${m}</span>`).join('');
+
+  function personRow(e, badge){
+    const nm = staffName(e.acc) || e.acc;
+    const col = e.rate>=80?'var(--accent)':e.rate>=60?'var(--amber)':'var(--red)';
+    const grpMini = Object.entries(e.byGrp).sort((a,b)=>b[1].n-a[1].n).slice(0,3)
+      .map(([g,v])=>`${esc(grpById(g).name.replace(/HC: |\(.*\)/g,'').trim())} ${(v.ok/v.n*100).toFixed(0)}%`).join(' · ');
+    return `<tr style="cursor:pointer" onclick="kpiDrillTo('${e.acc}')">
+      <td><b>${esc(nm)}</b>${badge||''}<div class="small mut">${esc(e.acc)}</div></td>
+      <td class="num">${e.n.toLocaleString('vi')}</td>
+      <td class="num" style="color:${col};font-weight:700">${e.rate.toFixed(1)}%</td>
+      <td><div class="bar-out"><div class="bar-in" style="width:${Math.min(100,e.rate)}%;background:${col}"></div></div></td>
+      <td class="num">${e.med!=null?e.med.toFixed(1):'–'}</td>
+      <td class="num" style="color:${e.over?'var(--red)':'var(--ink-dim)'}">${e.over}</td>
+      <td class="small mut">${grpMini}</td>
+    </tr>`;
+  }
+
+  let html = `
+    <div class="card">
+      <div class="filters">
+        <b style="font-size:13px">Tháng duyệt B4:</b>${mChips}
+        <span class="chip" onclick="kpiMonths=new Set(${JSON.stringify(allMonths).replace(/"/g,'&quot;')});renderKpi()">Tất cả</span>
+        <span style="flex:1"></span>
+        <button class="btn btn-success" onclick="exportKpi()">⬇ Xuất Excel</button>
+      </div>
+      <div class="small mut" style="margin-bottom:8px">Mỗi hồ sơ được chấm đạt/trễ theo SLA của <b>nhóm chi phí của chính nó</b> — người ôm nhóm khó không bị thiệt. Bấm vào từng người để xem chi tiết hồ sơ.</div>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Nhân viên</th><th>SL hồ sơ</th><th>% đạt SLA nhóm</th><th></th><th>Median ngày</th><th>Quá hạn nặng</th><th>Nhóm chính (% đạt)</th></tr></thead>
+        <tbody>
+          ${known.map(e=>personRow(e)).join('')}
+          ${unknown.length?`<tr><td colspan="7" style="background:var(--amber-soft);font-weight:700;font-size:12px">⚠ Receiver chưa khai báo trong danh sách nhân sự — kiểm tra và thêm ở tab Cấu hình</td></tr>`:''}
+          ${unknown.map(e=>personRow(e,' <span class="warnbadge">chưa khai báo</span>')).join('')}
+          ${lead.length?`<tr><td colspan="7" style="background:#eef2f4;font-weight:700;font-size:12px">Lead hỗ trợ check (không xếp hạng)</td></tr>`:''}
+          ${lead.map(e=>personRow(e)).join('')}
+        </tbody>
+      </table></div>
+    </div>
+    <div id="kpiDrillBox"></div>`;
+  el.innerHTML = html;
+  if(kpiDrill) renderDrill(rows);
+}
+function kpiToggleMonth(m){
+  if(kpiMonths.has(m) && kpiMonths.size>1) kpiMonths.delete(m); else kpiMonths.add(m);
+  renderKpi();
+}
+function kpiDrillTo(acc){ kpiDrill = acc; renderKpi(); document.getElementById('kpiDrillBox')?.scrollIntoView({behavior:'smooth'}); }
+function renderDrill(rows){
+  const box = document.getElementById('kpiDrillBox');
+  const mine = rows.filter(d=>d.acc===kpiDrill).sort((a,b)=>b.days-a.days);
+  if(!mine.length){ box.innerHTML=''; return; }
+  const nm = staffName(kpiDrill) || kpiDrill;
+  // breakdown nhóm
+  const byG = {};
+  for(const d of mine){ (byG[d.group]=byG[d.group]||{n:0,ok:0,days:[]}); byG[d.group].n++; if(d.ok) byG[d.group].ok++; byG[d.group].days.push(d.days); }
+  const gRows = Object.entries(byG).sort((a,b)=>b[1].n-a[1].n).map(([g,v])=>{
+    const gg = grpById(g); const r = v.ok/v.n*100;
+    const col = r>=80?'var(--accent)':r>=60?'var(--amber)':'var(--red)';
+    return `<tr><td>${esc(gg.name)}</td><td class="num">${v.n}</td><td class="num mut">${gg.sla} ngày</td>
+      <td class="num" style="color:${col};font-weight:700">${r.toFixed(1)}%</td>
+      <td class="num">${pctile(v.days,.5).toFixed(1)}</td></tr>`;
+  }).join('');
+  const dRows = mine.slice(0,400).map(d=>`<tr>
+    <td class="mono">${esc(d.ma)}</td>
+    <td><span class="grp-tag">${esc(grpById(d.group).name)}</span></td>
+    <td>${esc(String(d.muc).slice(0,80))}</td>
+    <td class="num">${d.days.toFixed(1)}</td>
+    <td class="num mut">${d.sla}</td>
+    <td>${d.ok?'<span class="pill p-ok">Đạt</span>':d.over?'<span class="pill p-bad">Quá hạn nặng</span>':'<span class="pill p-late">Trễ</span>'}</td>
+  </tr>`).join('');
+  box.innerHTML = `<div class="drill">
+    <div class="filters"><b style="font-size:14px">🔍 Chi tiết: ${esc(nm)} — ${mine.length.toLocaleString('vi')} hồ sơ</b>
+      <span style="flex:1"></span>
+      <button class="btn btn-success" onclick="exportDrill('${esc(kpiDrill)}')">⬇ Xuất Excel người này</button>
+      <button class="btn btn-ghost" onclick="kpiDrill='';renderKpi()">✕ Đóng</button></div>
+    <div class="cfg-grid">
+      <div><div class="card-title">Theo nhóm chi phí</div>
+        <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th></tr></thead><tbody>${gRows}</tbody></table></div>
+      <div><div class="card-title">Từng hồ sơ (chậm nhất trước${mine.length>400?', hiện 400 dòng đầu':''})</div>
+        <div class="tbl-scroll" style="max-height:320px"><table>
+        <thead><tr><th>Mã ĐN</th><th>Nhóm</th><th>Nội dung</th><th>Số ngày</th><th>SLA</th><th>KQ</th></tr></thead>
+        <tbody>${dRows}</tbody></table></div></div>
+    </div></div>`;
+}
+
+/* ════════════════ TAB KPI TỔNG HỢP ════════════════ */
+const MANUAL_LS_KEY = 'kpi_sla_manual_v1';
+let MANUAL = {};  // {quy: {acc: {critId: value}}}
+try{ MANUAL = JSON.parse(localStorage.getItem(MANUAL_LS_KEY)) || {}; }catch(e){ MANUAL = {}; }
+function saveManual(){ try{ localStorage.setItem(MANUAL_LS_KEY, JSON.stringify(MANUAL)); }catch(e){} }
+
+const Q_MONTHS_2026 = {
+  Q1:['2026-01','2026-02','2026-03'], Q2:['2026-04','2026-05','2026-06'],
+  Q3:['2026-07','2026-08','2026-09'], Q4:['2026-10','2026-11','2026-12'],
+  YEAR:['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'],
+};
+let tongQuy = null;
+
+function grade(score){
+  if(score>=90) return {lbl:'Xuất sắc', bg:'#16a34a'};
+  if(score>=80) return {lbl:'Tốt',      bg:'#2563eb'};
+  if(score>=70) return {lbl:'Khá',      bg:'#b8841a'};
+  if(score>=60) return {lbl:'TB',       bg:'#c2570f'};
+  return              {lbl:'Yếu',      bg:'#a32626'};
+}
+
+// Metric auto theo quý cho 1 người, tính từ DERIVED.done (SLA đọc live theo cấu hình)
+function tongAutoStats(acc, months){
+  if(!DERIVED) return null;
+  const rows = DERIVED.done.filter(d=>d.acc===acc && months.includes(d.month));
+  if(!rows.length) return null;
+  const n = rows.length;
+  const ok = rows.filter(d=>d.ok).length;
+  const over = rows.filter(d=>d.over).length;
+  const daysSum = rows.reduce((s,d)=>s+d.days,0);
+  const ratioSum = rows.reduce((s,d)=>s+(d.sla>0 ? d.days/d.sla : 0),0);
+  return {
+    count: n,
+    sla_rate:    Math.round(ok/n*1000)/10,
+    avg_days:    Math.round(daysSum/n*100)/100,
+    avg_vs_sla:  Math.round(ratioSum/n*1000)/10,   // % so với SLA nhóm: 100 = vừa khớp SLA
+    overdue_cnt: over,
+    overdue_pct: Math.round((n-ok)/n*1000)/10,
+  };
+}
+
+function critValue(crit, acc, quy, stats){
+  if(crit.type==='auto') return stats ? (stats[crit.metric] ?? null) : null;
+  const v = MANUAL[quy]?.[acc]?.[crit.id];
+  return (v===undefined || v===null || v==='') ? null : v;
+}
+
+// Công thức điểm giữ nguyên KPI gốc
+function scoreCrit(crit, val){
+  if(val===null || val===undefined || val==='' || isNaN(parseFloat(val))) return null;
+  const v = parseFloat(val);
+  if(crit.bonus) return {pct:null, score: v>=2?10:v>=1?5:0};
+  let pct;
+  if(crit.is_cnt)     pct = v===0 ? 100 : Math.max(0, 100 - v*3);
+  else if(crit.lower) pct = v<=crit.tv ? 100 : Math.max(0, (crit.tv/v)*100);
+  else                pct = Math.min(100, (v/crit.tv)*100);
+  return {pct: Math.round(pct*10)/10, score: Math.round(pct/100*crit.ts*10)/10};
+}
+
+function tongTotals(acc, quy, months, criteria, stats){
+  let total=0, bonus=0, hasAny=false;
+  for(const crit of criteria){
+    const val = critValue(crit, acc, quy, stats);
+    const r = scoreCrit(crit, val);
+    if(r===null) continue;
+    hasAny = true;
+    if(crit.bonus) bonus += r.score; else total += r.score;
+  }
+  return {total: Math.round(total*10)/10, bonus: Math.round(bonus*10)/10, hasAny, stats};
+}
+
+// SL hồ sơ B7-B8 của 1 người trong kỳ (Team TT)
+function ttCount(acc, months){
+  if(!DERIVED) return 0;
+  return DERIVED.doneTT.filter(d=>d.acc===acc && months.includes(d.month)).length;
+}
+
+function setManualKpi(quy, acc, critId, value){
+  if(!MANUAL[quy]) MANUAL[quy]={};
+  if(!MANUAL[quy][acc]) MANUAL[quy][acc]={};
+  if(value==='') delete MANUAL[quy][acc][critId];
+  else MANUAL[quy][acc][critId] = parseFloat(value);
+  saveManual();
+  renderTong();
+}
+
+function weightSum(criteria){
+  return (criteria||CFG.kpiCriteria).filter(c=>!c.bonus).reduce((s,c)=>s+(parseFloat(c.ts)||0),0);
+}
+
+function buildTongTable(people, criteria, months, infoLabel, infoFn){
+  const critTh = criteria.map(c=>
+    `<th title="${esc(c.name)} · T.số ${c.bonus?'Bonus':c.ts+'%'} · Target ${c.lower?'≤':'≥'}${c.tv}${c.unit}">
+      ${esc(c.name.length>16 ? c.name.slice(0,16)+'…' : c.name)}
+      <div class="small" style="font-weight:400;opacity:.75">${c.bonus?'Bonus':c.ts+'%'} · ${c.type==='auto'?'AUTO':'NHẬP'}</div></th>`).join('');
+
+  const scored = people.map(s=>{
+    const stats = criteria.some(c=>c.type==='auto') ? tongAutoStats(s.acc, months) : null;
+    return {s, ...tongTotals(s.acc, tongQuy, months, criteria, stats), isLead:CFG.leadAcc.includes(s.acc)};
+  });
+  scored.sort((a,b)=>(a.isLead?1:0)-(b.isLead?1:0) || (b.hasAny?1:0)-(a.hasAny?1:0) || (b.total+b.bonus)-(a.total+a.bonus));
+
+  let rank=0;
+  const rows = scored.map(e=>{
+    const {s, total, bonus, hasAny, stats, isLead} = e;
+    if(!isLead && hasAny) rank++;
+    const g = grade(total);
+    const info = infoFn ? infoFn(s) : (stats ? stats.count.toLocaleString('vi')+' hs' : 'chưa có hồ sơ');
+    const tds = criteria.map(crit=>{
+      const val = critValue(crit, s.acc, tongQuy, stats);
+      const r = scoreCrit(crit, val);
+      if(crit.type==='auto'){
+        const disp = val===null ? '–' : (crit.is_cnt ? val : (Math.round(val*10)/10) + (crit.unit==='%'?'%':''));
+        const col = r===null ? 'var(--ink-dim)' : (r.pct>=95?'var(--accent)':r.pct>=70?'var(--amber)':'var(--red)');
+        return `<td class="num"><span style="color:${col};font-weight:700">${disp}</span>
+          <div class="small mut">${r!==null && !crit.bonus ? r.score.toFixed(1)+' đ' : ''}</div></td>`;
+      }
+      const cur = MANUAL[tongQuy]?.[s.acc]?.[crit.id] ?? '';
+      return `<td class="num">
+        <input type="number" step="0.1" style="width:64px" value="${cur}" placeholder="–"
+          onchange="setManualKpi('${tongQuy}','${esc(s.acc)}','${crit.id}',this.value)">
+        <div class="small mut">${r!==null ? (crit.bonus?'+':'')+r.score.toFixed(1)+' đ' : ''}</div></td>`;
+    }).join('');
+    return `<tr style="${isLead?'background:#eef2f4':''}">
+      <td class="num mut">${isLead?'–':(hasAny?rank:'–')}</td>
+      <td><b>${esc(s.name)}</b>${isLead?' <span class="small mut">(lead, không xếp hạng)</span>':''}
+        <div class="small mut">${esc(s.acc)} · ${info}</div></td>
+      ${tds}
+      <td class="num" style="font-size:15px;font-weight:700;color:${hasAny?g.bg:'var(--ink-dim)'}">${hasAny?total.toFixed(1):'–'}</td>
+      <td class="num" style="color:var(--violet);font-weight:700">${bonus>0?'+'+bonus.toFixed(1):''}</td>
+      <td>${hasAny?`<span class="pill" style="background:${g.bg};color:#fff">${g.lbl}</span>`:'<span class="pill p-grey">Chưa có</span>'}</td>
+    </tr>`;
+  }).join('');
+
+  return `<div class="tbl-scroll"><table>
+    <thead><tr><th>#</th><th>Nhân viên</th>${critTh}<th>Tổng /100</th><th>Bonus</th><th>Xếp loại</th></tr></thead>
+    <tbody>${rows || '<tr><td colspan="20" class="empty">Chưa có nhân sự.</td></tr>'}</tbody>
+  </table></div>`;
+}
+
+function renderTong(){
+  const el = document.getElementById('tab-tong');
+  if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
+  // Chọn quý mặc định: quý chứa tháng dữ liệu mới nhất
+  if(tongQuy===null){
+    const latest = [...DERIVED.months].sort().pop();
+    tongQuy = 'Q2';
+    if(latest){ const mm = parseInt(latest.slice(5,7)); tongQuy = 'Q'+Math.min(4, Math.ceil(mm/3)); }
+  }
+  const months = Q_MONTHS_2026[tongQuy] || [];
+  const wsCP = weightSum(CFG.kpiCriteria);
+  const wsTT = weightSum(CFG.kpiCriteriaTT);
+
+  const qChips = ['Q1','Q2','Q3','Q4','YEAR'].map(q=>
+    `<span class="chip ${tongQuy===q?'on':''}" onclick="tongQuy='${q}';renderTong()">${q==='YEAR'?'Cả năm':q+'/2026'}</span>`).join('');
+
+  const active = CFG.staff.filter(s=>s.acc && !CFG.excludeRecv.includes(s.acc));
+  const cpPeople = active.filter(s=>s.team!=='TT');
+  const ttPeople = active.filter(s=>s.team==='TT');
+
+  const cpTable = buildTongTable(cpPeople, CFG.kpiCriteria, months);
+  const ttTable = buildTongTable(ttPeople, CFG.kpiCriteriaTT, months, 'SL hồ sơ B7-B8',
+    s => `<b style="color:var(--violet)">${ttCount(s.acc, months).toLocaleString('vi')}</b> hs B7-B8`);
+
+  el.innerHTML = `
+    ${wsCP!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team CP đang là <b>${wsCP}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
+    ${wsTT!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team TT đang là <b>${wsTT}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
+    <div class="card">
+      <div class="filters">
+        <b style="font-size:13px">Kỳ chấm:</b>${qChips}
+        <span style="flex:1"></span>
+        <button class="btn btn-ghost" onclick="downloadManualTemplate(false)">⬇ Tải template (Excel/CSV)</button>
+        <button class="btn btn-ghost" onclick="document.getElementById('manualImport').click()">⬆ Nạp file KPI (.xlsx/.csv)</button>
+        <input type="file" id="manualImport" accept=".xlsx,.csv" style="display:none" onchange="importManualFile(this.files[0]);this.value=''">
+        <button class="btn btn-success" onclick="exportTong()">⬇ Xuất Excel bảng điểm</button>
+      </div>
+      <div class="small mut" style="margin-bottom:8px">
+        Chỉ tiêu <b>AUTO</b> tính trực tiếp từ dữ liệu upload theo SLA nhóm đang cấu hình. Chỉ tiêu <b>NHẬP</b>: gõ trực tiếp trên bảng, hoặc bấm <b>Tải template</b> → điền giá trị thực đạt trong Excel → <b>Nạp file KPI</b> để nhập hàng loạt (điểm tự quy đổi theo trọng số, lưu theo từng quý).
+      </div>
+      <div class="card-title" style="color:#2563eb">■ Team CP — chi phí (${cpPeople.length} người)</div>
+      ${cpTable}
+      <div class="card-title" style="color:var(--violet);margin-top:18px">■ Team TT — thanh toán B7-B8 (${ttPeople.length} người) · theo dõi số lượng hồ sơ xử lý, KPI nhập tay</div>
+      ${ttTable}
+    </div>`;
+}
+
+// Chỉ tiêu NHẬP TAY (không auto, không bonus tính cột) — bonus vẫn cho nhập
+function manualCrits(list){ return list.filter(c=>c.type!=='auto'); }
+function critNum(c){ return String(c.id).replace(/\D/g,'') || c.id; }
+
+// Xuất template CSV: Nhân viên,Team,Q{q}_CP_{n}_{tên}...,Q{q}_TT_{n}_{tên}...
+function buildManualTemplate(quarters){
+  const cp = manualCrits(CFG.kpiCriteria);
+  const tt = manualCrits(CFG.kpiCriteriaTT);
+  const hdr = ['Nhân viên','Team'];
+  for(const q of quarters){
+    for(const c of cp) hdr.push(`${q}_CP_${critNum(c)}_${c.name.slice(0,20)}`);
+    for(const c of tt) hdr.push(`${q}_TT_${critNum(c)}_${c.name.slice(0,20)}`);
+  }
+  const rows=[hdr];
+  for(const s of CFG.staff){
+    if(!s.acc || CFG.excludeRecv.includes(s.acc)) continue;
+    const isCP = s.team!=='TT';
+    const row=[s.name, isCP?'Team CP':'Team TT'];
+    for(const q of quarters){
+      for(const c of cp){ const v = isCP ? (MANUAL[q]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
+      for(const c of tt){ const v = !isCP ? (MANUAL[q]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
+    }
+    rows.push(row);
+  }
+  return rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+function downloadManualTemplate(allYear){
+  const quarters = allYear ? ['Q1','Q2','Q3','Q4'] : [tongQuy==='YEAR'?'Q2':tongQuy];
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob(['﻿'+buildManualTemplate(quarters)],{type:'text/csv;charset=utf-8'}));
+  a.download=`KPI_Template_NhapTay_${quarters.join('-')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇ Đã tải template '+quarters.join(', ')+' — điền xong nạp lại bằng "Nạp file KPI"');
+}
+
+function importManualFile(file){
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const r = new FileReader();
+  if(ext==='csv'){ r.onload=e=>parseManualCsv(e.target.result); r.readAsText(file,'utf-8'); }
+  else { r.onload=e=>{ const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array'}); parseManualCsv(XLSX.utils.sheet_to_csv(wb.Sheets[wb.SheetNames[0]])); }; r.readAsArrayBuffer(file); }
+}
+function parseManualCsv(text){
+  function splitLine(line){ const out=[]; let cur='',q=false; for(let i=0;i<line.length;i++){ const c=line[i]; if(c==='"'){ if(q&&line[i+1]==='"'){cur+='"';i++;} else q=!q; } else if(c===','&&!q){out.push(cur);cur='';} else cur+=c; } out.push(cur); return out.map(s=>s.trim()); }
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  if(lines.length<2){ alert('File không có dữ liệu.'); return; }
+  const hdr = splitLine(lines[0]);
+  // cột → {quy, team('CP'|'TT'), n}
+  const colMeta={};
+  for(let i=2;i<hdr.length;i++){ const m=hdr[i].match(/^Q([1-4])_(CP|TT)_(\d+)_/i); if(m) colMeta[i]={quy:'Q'+m[1], team:m[2].toUpperCase(), n:m[3]}; }
+  if(!Object.keys(colMeta).length){ alert('Không nhận dạng được cột. Hãy dùng template tải từ tool này (cột dạng Q2_CP_1_...).'); return; }
+  const cpById = {}; for(const c of manualCrits(CFG.kpiCriteria)) cpById[critNum(c)]=c.id;
+  const ttById = {}; for(const c of manualCrits(CFG.kpiCriteriaTT)) ttById[critNum(c)]=c.id;
+  let filled=0; const warn=[];
+  for(const line of lines.slice(1)){
+    const cells = splitLine(line);
+    const name = (cells[0]||'').replace(/"/g,'').trim();
+    if(!name) continue;
+    const s = CFG.staff.find(x=>x.name.toLowerCase()===name.toLowerCase());
+    if(!s){ warn.push(name); continue; }
+    for(const [idx,meta] of Object.entries(colMeta)){
+      const isCProw = s.team!=='TT';
+      if((meta.team==='CP')!==isCProw) continue; // cột team khác thì bỏ
+      const critId = (meta.team==='CP'?cpById:ttById)[meta.n];
+      if(!critId) continue;
+      const raw = (cells[idx]||'').replace(/"/g,'').trim();
+      if(raw==='') continue;
+      const val = parseFloat(raw);
+      if(isNaN(val)) continue;
+      if(!MANUAL[meta.quy]) MANUAL[meta.quy]={};
+      if(!MANUAL[meta.quy][s.acc]) MANUAL[meta.quy][s.acc]={};
+      MANUAL[meta.quy][s.acc][critId]=val;
+      filled++;
+    }
+  }
+  saveManual(); renderTong();
+  alert(`✓ Đã nạp ${filled} ô điểm`+(warn.length?`\n⚠ Không tìm thấy nhân viên: ${warn.join(', ')}`:''));
+}
+
+async function exportTong(){
+  if(!DERIVED) return;
+  const months = Q_MONTHS_2026[tongQuy] || [];
+  const wb = await buildWb();
+  const active = CFG.staff.filter(s=>s.acc && !CFG.excludeRecv.includes(s.acc));
+
+  function addSheet(name, people, criteria, isTT){
+    const ws = wb.addWorksheet(name);
+    const hdr = ['Nhân viên','Account', isTT?'SL hồ sơ B7-B8':'SL hồ sơ'];
+    for(const c of criteria){ hdr.push(c.name+' (GT)'); hdr.push('Điểm'); }
+    hdr.push('Tổng /100','Bonus','Xếp loại');
+    xlsHeader(ws, hdr);
+    const scored = people.map(s=>{
+      const stats = criteria.some(c=>c.type==='auto') ? tongAutoStats(s.acc, months) : null;
+      return {s, ...tongTotals(s.acc, tongQuy, months, criteria, stats), isLead:CFG.leadAcc.includes(s.acc)};
+    });
+    scored.sort((a,b)=>(a.isLead?1:0)-(b.isLead?1:0) || (b.total+b.bonus)-(a.total+a.bonus));
+    for(const e of scored){
+      const row = [e.s.name, e.s.acc, isTT ? ttCount(e.s.acc, months) : (e.stats?e.stats.count:0)];
+      for(const crit of criteria){
+        const val = critValue(crit, e.s.acc, tongQuy, e.stats);
+        const r = scoreCrit(crit, val);
+        row.push(val===null?'':val);
+        row.push(r===null?'':r.score);
+      }
+      row.push(e.hasAny?e.total:'', e.bonus>0?e.bonus:'', e.hasAny?grade(e.total).lbl:'Chưa có');
+      ws.addRow(row);
+    }
+    ws.columns.forEach((col,i)=>{ col.width = i===0?16:(i===1?13:12); });
+  }
+  addSheet('Team CP '+tongQuy, active.filter(s=>s.team!=='TT'), CFG.kpiCriteria, false);
+  addSheet('Team TT '+tongQuy, active.filter(s=>s.team==='TT'), CFG.kpiCriteriaTT, true);
+  dlWb(wb, 'KPI_TongHop_'+tongQuy+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+
+/* ════════════════ TAB CẤU HÌNH ════════════════ */
+// Bảng sửa bộ chỉ tiêu KPI (dùng chung cho CP và TT) — key = 'kpiCriteria' | 'kpiCriteriaTT'
+function critEditorHtml(key, label, color){
+  const list = CFG[key];
+  const ws = weightSum(list);
+  const rows = list.map((c,i)=>`<tr>
+    <td><input type="text" style="width:190px" value="${esc(c.name)}" onchange="CFG.${key}[${i}].name=this.value;saveCfg()"></td>
+    <td><select onchange="CFG.${key}[${i}].type=this.value;saveCfg();renderCfg()">
+      <option value="manual" ${c.type==='manual'?'selected':''}>Nhập tay</option>
+      <option value="auto" ${c.type==='auto'?'selected':''}>Auto</option></select></td>
+    <td>${c.type==='auto'?`<select onchange="CFG.${key}[${i}].metric=this.value;saveCfg()">
+      ${['sla_rate','avg_vs_sla','avg_days','overdue_cnt','overdue_pct'].map(m=>`<option value="${m}" ${c.metric===m?'selected':''}>${m}</option>`).join('')}
+    </select>`:'<span class="mut small">–</span>'}</td>
+    <td><input type="number" min="0" max="100" step="1" value="${c.ts}" onchange="CFG.${key}[${i}].ts=parseFloat(this.value)||0;saveCfg();renderCfg()"></td>
+    <td><input type="number" step="0.1" value="${c.tv}" onchange="CFG.${key}[${i}].tv=parseFloat(this.value)||0;saveCfg()"></td>
+    <td class="num"><input type="checkbox" ${c.lower?'checked':''} onchange="CFG.${key}[${i}].lower=this.checked;saveCfg()"></td>
+    <td class="num"><input type="checkbox" ${c.bonus?'checked':''} onchange="CFG.${key}[${i}].bonus=this.checked;saveCfg();renderCfg()"></td>
+    <td><button class="rowbtn" onclick="CFG.${key}.splice(${i},1);saveCfg();renderCfg()">✕</button></td>
+  </tr>`).join('');
+  return `
+    <div style="font-size:12.5px;font-weight:700;color:${color};margin:10px 0 6px">■ ${esc(label)}
+      ${ws!==100?`<span class="warnbadge">tổng trọng số: ${ws}% ≠ 100%</span>`:''}</div>
+    <div class="tbl-scroll" style="max-height:280px"><table>
+      <thead><tr><th>Chỉ tiêu</th><th>Loại</th><th>Metric (auto)</th><th>Trọng số %</th><th>Target</th><th>Thấp = tốt</th><th>Bonus</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>
+    <button class="btn btn-ghost" style="margin-top:6px" onclick="CFG.${key}.push({id:'x'+Date.now(),name:'Chỉ tiêu mới',ts:0,type:'manual',tv:100,lower:false,unit:'%'});saveCfg();renderCfg()">+ Thêm chỉ tiêu</button>`;
+}
+
+function renderCfg(){
+  const el = document.getElementById('tab-cfg');
+  // percentile theo nhóm từ dữ liệu done
+  const stats = {};
+  if(DERIVED){
+    for(const d of DERIVED.done){ (stats[d.group]=stats[d.group]||[]).push(d.days); }
+  }
+  const slaRows = CFG.groups.map((g,i)=>{
+    const arr = stats[g.id]||[];
+    const ref = arr.length ? `SL ${arr.length.toLocaleString('vi')} · Med ${pctile(arr,.5).toFixed(1)} · P75 ${pctile(arr,.75).toFixed(1)} · P80 ${pctile(arr,.8).toFixed(1)} · P90 ${pctile(arr,.9).toFixed(1)}` : '<i>chưa có dữ liệu</i>';
+    const btns = arr.length ? ['75','80','90'].map(p=>`<button class="btn btn-ghost small" style="padding:2px 7px" onclick="suggestSla(${i},.${p})">P${p}</button>`).join(' ') : '';
+    return `<tr>
+      <td><b>${esc(g.name)}</b><div class="small mut">${ref}</div></td>
+      <td><input type="number" min="0" step="0.5" value="${g.sla}" onchange="CFG.groups[${i}].sla=parseFloat(this.value)||0;saveCfg();recompute()"></td>
+      <td><input type="number" min="0" step="0.5" value="${g.ov}" onchange="CFG.groups[${i}].ov=parseFloat(this.value)||0;saveCfg();recompute()"></td>
+      <td>${btns}</td>
+    </tr>`;
+  }).join('');
+
+  const subRows = CFG.ctpSubs.map((s,i)=>`<tr>
+    <td>${esc(s.name)}</td>
+    <td><input type="text" value="${esc(s.person)}" placeholder="(chưa gán)" onchange="CFG.ctpSubs[${i}].person=this.value.trim();saveCfg();recompute()"></td>
+  </tr>`).join('');
+
+  const grpSel = i => CFG.groups.map(g=>`<option value="${g.id}" ${CFG.assignRules[i].group===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
+  const regSel = i => ['','HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}" ${CFG.assignRules[i].region===r?'selected':''}>${r?REGION_LABEL[r]:'— mọi vùng —'}</option>`).join('');
+  const ruleRows = CFG.assignRules.map((r,i)=>`<tr>
+    <td><select onchange="CFG.assignRules[${i}].group=this.value;saveCfg();recompute()">${grpSel(i)}</select></td>
+    <td><select onchange="CFG.assignRules[${i}].region=this.value;saveCfg();recompute()">${regSel(i)}</select></td>
+    <td><input type="text" style="width:110px" value="${esc(r.dvPat)}" placeholder="regex đơn vị" onchange="CFG.assignRules[${i}].dvPat=this.value;saveCfg();recompute()"></td>
+    <td><input type="text" style="width:150px" value="${esc(r.textPat)}" placeholder="regex nội dung" onchange="CFG.assignRules[${i}].textPat=this.value;saveCfg();recompute()"></td>
+    <td><input type="text" style="width:90px" value="${esc(r.person)}" onchange="CFG.assignRules[${i}].person=this.value.trim();saveCfg();recompute()"></td>
+    <td><button class="rowbtn" onclick="CFG.assignRules.splice(${i},1);saveCfg();recompute();renderCfg()">✕</button></td>
+  </tr>`).join('');
+
+  const crRows = Object.entries(CFG.creatorRegion).map(([k,v])=>`<tr>
+    <td class="mono">${esc(k)}</td>
+    <td><select onchange="CFG.creatorRegion['${esc(k)}']=this.value;saveCfg();recompute()">${['HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}" ${v===r?'selected':''}>${REGION_LABEL[r]}</option>`).join('')}</select></td>
+    <td><button class="rowbtn" onclick="delete CFG.creatorRegion['${esc(k)}'];saveCfg();recompute();renderCfg()">✕</button></td>
+  </tr>`).join('');
+
+  const staffRows = CFG.staff.map((s,i)=>`<tr>
+    <td><input type="text" style="width:95px" value="${esc(s.name)}" onchange="CFG.staff[${i}].name=this.value.trim();saveCfg();recompute()"></td>
+    <td><input type="text" style="width:110px" value="${esc(s.acc)}" onchange="CFG.staff[${i}].acc=this.value.trim().toLowerCase();saveCfg();recompute()"></td>
+    <td><select onchange="CFG.staff[${i}].team=this.value;saveCfg()">
+      <option value="CP" ${s.team!=='TT'?'selected':''}>CP</option>
+      <option value="TT" ${s.team==='TT'?'selected':''}>TT</option></select></td>
+    <td><button class="rowbtn" onclick="CFG.staff.splice(${i},1);saveCfg();recompute();renderCfg()">✕</button></td>
+  </tr>`).join('');
+
+  el.innerHTML = `
+  <div class="cfg-grid">
+    <div class="card">
+      <div class="card-title">📏 SLA theo nhóm chi phí (ngày) — <span class="mut">tham chiếu Median/P75/P80/P90 tính từ dữ liệu đã upload</span></div>
+      <table><thead><tr><th>Nhóm</th><th>SLA</th><th>Ngưỡng quá hạn nặng</th><th>Gợi ý SLA</th></tr></thead><tbody>${slaRows}</tbody></table>
+      <div class="filters" style="margin-top:10px">
+        <label class="small">Ngưỡng nhắc "quên chuyển B5" (ngày): <input type="number" min="0" value="${CFG.b5Days}" onchange="CFG.b5Days=parseFloat(this.value)||0;saveCfg();recompute()"></label>
+        <label class="small">"Sắp trễ" từ % SLA: <input type="number" min="0" max="100" value="${CFG.warnPct}" onchange="CFG.warnPct=parseFloat(this.value)||70;saveCfg();recompute()"></label>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">👥 Nhóm con Công tác phí → người phụ trách</div>
+      <table><thead><tr><th>Nhóm con</th><th>Người</th></tr></thead><tbody>${subRows}</tbody></table>
+      <div class="small mut" style="margin-top:6px">CTP chung không rõ nhóm con sẽ thử khớp theo Đơn vị (Ban Kinh Doanh → Nhanntt, Marketing → Hientlt...; sửa trong JSON cấu hình nếu cần), còn lại rơi vào "Chưa gán — lead check".</div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🧭 Quy tắc gán người cho hồ sơ chờ B4 — duyệt từ trên xuống, khớp dòng đầu tiên</div>
+    <div class="tbl-scroll" style="max-height:380px"><table>
+      <thead><tr><th>Nhóm</th><th>Vùng</th><th>Mẫu Đơn vị</th><th>Mẫu Nội dung</th><th>Người</th><th></th></tr></thead>
+      <tbody>${ruleRows}</tbody></table></div>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.assignRules.push({group:'khac',region:'',dvPat:'',textPat:'',person:''});saveCfg();renderCfg()">+ Thêm quy tắc</button>
+    <div class="small mut" style="margin-top:8px">Áp dụng cho <b>mọi nhóm, kể cả Công tác phí</b>. Với hồ sơ CTP: ưu tiên nhóm con → quy tắc CTP theo đơn vị → quy tắc ở bảng này → người mặc định CTP chung.</div>
+  </div>
+  <div class="cfg-grid">
+    <div class="card">
+      <div class="card-title">🗺️ Người tạo → vùng (dùng khi hồ sơ điện/thuê nhà không ghi vùng)</div>
+      <div class="tbl-scroll" style="max-height:260px"><table><thead><tr><th>Người tạo (account)</th><th>Vùng</th><th></th></tr></thead><tbody>${crRows}</tbody></table></div>
+      <div class="filters" style="margin-top:8px">
+        <input type="text" id="newCrAcc" placeholder="account (vd: hangnn3)">
+        <select id="newCrReg">${['HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}">${REGION_LABEL[r]}</option>`).join('')}</select>
+        <button class="btn btn-ghost" onclick="const a=document.getElementById('newCrAcc').value.trim().toLowerCase();if(a){CFG.creatorRegion[a]=document.getElementById('newCrReg').value;saveCfg();recompute();renderCfg()}">+ Thêm</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">🧑‍💼 Nhân sự (receiver được tính KPI)</div>
+      <div class="tbl-scroll" style="max-height:260px"><table><thead><tr><th>Tên</th><th>Account</th><th>Team</th><th></th></tr></thead><tbody>${staffRows}</tbody></table></div>
+      <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.staff.push({name:'',acc:'',team:'CP'});saveCfg();renderCfg()">+ Thêm nhân sự</button>
+      <div class="small mut" style="margin-top:8px">Loại trừ (receiver team khác, cách nhau dấu phẩy):<br>
+        <input type="text" style="width:100%" value="${esc(CFG.excludeRecv.join(', '))}" onchange="CFG.excludeRecv=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute()"></div>
+      <div class="small mut" style="margin-top:6px">Lead hỗ trợ (không xếp hạng):<br>
+        <input type="text" style="width:100%" value="${esc(CFG.leadAcc.join(', '))}" onchange="CFG.leadAcc=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">🏆 Bộ chỉ tiêu KPI tổng hợp — <span class="mut">trọng số, target tùy chỉnh; tổng trọng số (không tính Bonus) mỗi team phải = 100%</span></div>
+    ${critEditorHtml('kpiCriteria','Team CP — chi phí','#2563eb')}
+    ${critEditorHtml('kpiCriteriaTT','Team TT — thanh toán','var(--violet)')}
+    <div class="small mut" style="margin-top:8px">💡 Gợi ý: "Tỷ lệ hạch toán chính xác" đang chiếm 45% nhưng là ô nhập tay không có nguồn bằng chứng — nên cân nhắc hạ xuống ~30% và tăng trọng số phần AUTO để điểm phân hóa thực chất hơn. Metric <b>avg_vs_sla</b> = TB(ngày xử lý ÷ SLA nhóm của hồ sơ)×100 — công bằng giữa các nhóm chi phí, thay cho "TB ngày ≤3" cũ. Metric auto hiện tính từ dữ liệu B3-B4 (Team CP); chỉ tiêu Team TT nên để Nhập tay.</div>
+  </div>
+  <div class="card">
+    <div class="filters">
+      <button class="btn btn-primary" onclick="exportCfg()">⬇ Xuất cấu hình (JSON)</button>
+      <button class="btn btn-ghost" onclick="document.getElementById('cfgImport').click()">⬆ Nhập cấu hình</button>
+      <input type="file" id="cfgImport" accept=".json" style="display:none" onchange="importCfg(this.files[0])">
+      <span style="flex:1"></span>
+      <button class="btn btn-danger" onclick="if(confirm('Khôi phục toàn bộ cấu hình mặc định?')){localStorage.removeItem(LS_KEY);loadCfg();recompute();renderAll();}">↺ Khôi phục mặc định</button>
+    </div>
+  </div>`;
+}
+function suggestSla(i, p){
+  if(!DERIVED) return;
+  const g = CFG.groups[i];
+  const arr = DERIVED.done.filter(d=>d.group===g.id).map(d=>d.days);
+  if(!arr.length) return;
+  g.sla = Math.round(pctile(arr,p)*2)/2;
+  g.ov = Math.round(g.sla*1.5*2)/2;
+  saveCfg(); recompute(); renderCfg();
+}
+function exportCfg(){
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(CFG,null,2)],{type:'application/json'}));
+  a.download = 'KPI_SLA_config_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+}
+function importCfg(f){
+  if(!f) return;
+  const r = new FileReader();
+  r.onload = e => {
+    try{ CFG = JSON.parse(e.target.result);
+      for(const k of Object.keys(DEFAULT_CFG)) if(CFG[k]===undefined) CFG[k]=JSON.parse(JSON.stringify(DEFAULT_CFG[k]));
+      saveCfg(); recompute(); renderAll(); alert('✓ Đã nhập cấu hình');
+    }catch(err){ alert('File cấu hình không hợp lệ: '+err.message); }
+  };
+  r.readAsText(f);
+}
+
+/* ════════════════ XUẤT EXCEL ════════════════ */
+async function buildWb(){
+  const wb = new ExcelJS.Workbook();
+  return wb;
+}
+const XLS_FILL = {
+  navy:{type:'pattern',pattern:'solid',fgColor:{argb:'FF16324A'}},
+  warn:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFDF2DD'}},
+  late:{type:'pattern',pattern:'solid',fgColor:{argb:'FFFBE7D8'}},
+  bad: {type:'pattern',pattern:'solid',fgColor:{argb:'FFFBE2E2'}},
+  b5:  {type:'pattern',pattern:'solid',fgColor:{argb:'FFECE5F7'}},
+};
+function xlsHeader(ws, cols){
+  const r = ws.addRow(cols); r.height=24;
+  r.eachCell(c=>{c.fill=XLS_FILL.navy;c.font={bold:true,color:{argb:'FFFFFFFF'},size:11};c.alignment={vertical:'middle',horizontal:'center',wrapText:true};});
+}
+async function exportDoc(){
+  if(!DERIVED) return;
+  const wb = await buildWb();
+  const ws1 = wb.addWorksheet('Chờ duyệt B4');
+  xlsHeader(ws1, ['Mã ĐN','Người phụ trách','Nhóm CP','Nhóm con','Nội dung','Đơn vị','Người tạo','Số tiền','Ngày Manager duyệt','Ngày chờ','SLA nhóm','Trạng thái']);
+  const A = [...DERIVED.pendA].sort((x,y)=>(x.person||'zzz').localeCompare(y.person||'zzz')||y.days-x.days);
+  for(const p of A){
+    const mgrD = p.mgrDate ? new Date(p.mgrDate) : null;
+    const r = ws1.addRow([p.ma, p.person||'— Chưa gán (lead check)', grpById(p.group).name, p.sub||'', p.muc, p.dv, p.creator, p.tien, fmtD(mgrD), Math.round(p.days), p.sla, STATUS_META[p.st].lbl]);
+    if(p.st!=='ok') r.eachCell(c=>{c.fill=XLS_FILL[p.st];});
+  }
+  const ws2 = wb.addWorksheet('Quên chuyển B5');
+  xlsHeader(ws2, ['Mã ĐN','Receiver','Nhóm CP','Nội dung','Đơn vị','Số tiền','Ngày Receiver duyệt','Số ngày','Trạng thái']);
+  for(const p of [...DERIVED.pendB].sort((x,y)=>y.days-x.days)){
+    const rcvD = p.rcvDate ? new Date(p.rcvDate) : null;
+    const r = ws2.addRow([p.ma, p.name, grpById(p.group).name, p.muc, p.dv, p.tien, fmtD(rcvD), Math.round(p.days), p.late?'Cần chuyển Chief':'Còn hạn']);
+    if(p.late) r.eachCell(c=>{c.fill=XLS_FILL.b5;});
+  }
+  for(const ws of [ws1,ws2]){
+    ws.columns.forEach((col,i)=>{ col.width = [12,18,18,10,50,32,18,13,14,9,8,15][i]||14; });
+  }
+  dlWb(wb, 'DocViec_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+async function exportKpi(){
+  if(!DERIVED) return;
+  const rows = DERIVED.done.filter(d=>kpiMonths?kpiMonths.has(d.month):true);
+  const per = {};
+  for(const d of rows){ (per[d.acc]=per[d.acc]||{n:0,ok:0,over:0,days:[]}); per[d.acc].n++; if(d.ok)per[d.acc].ok++; if(d.over)per[d.acc].over++; per[d.acc].days.push(d.days); }
+  const wb = await buildWb();
+  const ws = wb.addWorksheet('KPI SLA');
+  xlsHeader(ws, ['Nhân viên','Account','SL hồ sơ','Đạt SLA nhóm','% đạt','Median ngày','Quá hạn nặng','Ghi chú']);
+  const ents = Object.entries(per).sort((a,b)=>(b[1].ok/b[1].n)-(a[1].ok/a[1].n));
+  for(const [acc,p] of ents){
+    const nm = staffName(acc);
+    const note = CFG.leadAcc.includes(acc)?'Lead hỗ trợ':(nm?'':'⚠ chưa khai báo');
+    ws.addRow([nm||acc, acc, p.n, p.ok, Math.round(p.ok/p.n*1000)/10, Math.round(pctile(p.days,.5)*10)/10, p.over, note]);
+  }
+  ws.columns.forEach((col,i)=>{ col.width=[16,14,10,12,9,12,12,16][i]||12; });
+  dlWb(wb, 'KPI_SLA_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+async function exportDrill(acc){
+  if(!DERIVED) return;
+  const rows = DERIVED.done.filter(d=>d.acc===acc && (kpiMonths?kpiMonths.has(d.month):true)).sort((a,b)=>b.days-a.days);
+  const wb = await buildWb();
+  const ws = wb.addWorksheet('Chi tiết '+(staffName(acc)||acc).slice(0,25));
+  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Đơn vị','Số tiền','Tháng B4','Số ngày B3-B4','SLA nhóm','Kết quả']);
+  for(const d of rows){
+    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc, d.dv, d.tien, d.month, Math.round(d.days*10)/10, d.sla, d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
+    if(d.over) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
+    else if(!d.ok) r.eachCell(c=>{c.fill=XLS_FILL.late;});
+  }
+  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,32,13,10,12,9,13][i]||12; });
+  dlWb(wb, 'KPI_ChiTiet_'+(staffName(acc)||acc)+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+async function dlWb(wb, fname){
+  const buf = await wb.xlsx.writeBuffer();
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+  a.download = fname; a.click(); URL.revokeObjectURL(a.href);
+}
+
+/* ════════════════ INIT ════════════════ */
+document.getElementById('todayBadge').textContent = 'Hôm nay: '+new Date().toLocaleDateString('vi-VN');
+const drop = document.getElementById('drop'), fi = document.getElementById('fileInput');
+drop.addEventListener('click', ()=>fi.click());
+drop.addEventListener('dragover', e=>{e.preventDefault();});
+drop.addEventListener('drop', e=>{e.preventDefault(); handleFiles(e.dataTransfer.files);});
+fi.addEventListener('change', e=>handleFiles(e.target.files));
+
+/* ════════════════ FIREBASE ════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey:"AIzaSyDAtO_Dl4oVBCK5A5hIBCuvQXyL_oFe5pU",
+  authDomain:"list-todo-af-long-chau.firebaseapp.com",
+  databaseURL:"https://list-todo-af-long-chau-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"list-todo-af-long-chau",
+  storageBucket:"list-todo-af-long-chau.firebasestorage.app",
+  messagingSenderId:"932157572507",
+  appId:"1:932157572507:web:f4f56b9958ba65929d4d3e",
+};
+const FB_EMAIL_MAP = {
+  'haoln11@fpt.com':{name:'Haoln11',role:'member'}, 'khangth4@fpt.com':{name:'Khangth',role:'member'},
+  'thydu@fpt.com':{name:'Thydu',role:'member'}, 'hanntn10@fpt.com':{name:'Hanntn',role:'member'},
+  'huongdb2@fpt.com':{name:'Huongdb',role:'member'}, 'dungdp7@fpt.com':{name:'Dungdp',role:'member'},
+  'ngoclh9@fpt.com':{name:'Ngoclh',role:'member'}, 'kietpt20@fpt.com':{name:'Kietpt',role:'member'},
+  'dinhvu@fpt.com':{name:'Dinhvu',role:'member'}, 'toantp2@fpt.com':{name:'Toantp',role:'admin'},
+  'trangntm43@fpt.com':{name:'Trangntm',role:'member'},
+  'chilhk@fpt.com':{name:'Chilhk',role:'member'}, 'lanntn10@fpt.com':{name:'Lanntn',role:'member'},
+  'diepdt2@fpt.com':{name:'Diepdt',role:'member'}, 'nhanntt@fpt.com':{name:'Nhanntt',role:'member'},
+  'hanttn@fpt.com':{name:'Hanttn',role:'member'}, 'huyentht@fpt.com':{name:'Huyentht',role:'member'},
+  'thydg@fpt.com':{name:'Thydg',role:'member'},
+};
+let USER_ROLE = 'member';
+let FBDB = null;
+
+const fbApp = firebase.initializeApp(FIREBASE_CONFIG, 'keto5-auth');
+const fbAuth = fbApp.auth();
+FBDB = fbApp.database();
+
+fbAuth.onAuthStateChanged(async user => {
+  const barrier = document.getElementById('authBarrier');
+  if(!user){
+    if(window.parent !== window){
+      setTimeout(() => {
+        if(!fbAuth.currentUser) document.getElementById('authMsg').textContent = '⚠ Chưa đăng nhập — vui lòng mở qua App Kế Toán.';
+      }, 10000);
+      return;
+    }
+    document.getElementById('authMsg').textContent = '⚠ Chưa đăng nhập — vui lòng mở qua App Kế Toán.';
+    return;
+  }
+  const info = FB_EMAIL_MAP[(user.email||'').toLowerCase()] || {name:(user.email||'').split('@')[0], role:'member'};
+  USER_ROLE = info.role;
+  applyRole();
+  barrier.style.display = 'none';
+  await fbLoadCfg();
+  await fbLoadData();
+  renderBanner(); renderFileBadges(); renderAll();
+});
+
+function applyRole(){
+  const cfgTab = document.querySelector('.tab[data-tab="cfg"]');
+  const dropZone = document.getElementById('drop');
+  if(USER_ROLE !== 'admin'){
+    if(cfgTab) cfgTab.style.display = 'none';
+    if(dropZone) dropZone.style.display = 'none';
+  } else {
+    if(cfgTab) cfgTab.style.display = '';
+    if(dropZone) dropZone.style.display = '';
+  }
+}
+
+async function fbLoadCfg(){
+  try{
+    const snap = await FBDB.ref('v3/kpiConfig').once('value');
+    if(snap.exists()){
+      CFG = snap.val();
+      cfgIsDefault = false;
+      for(const k of Object.keys(DEFAULT_CFG)) if(CFG[k]===undefined) CFG[k]=JSON.parse(JSON.stringify(DEFAULT_CFG[k]));
+      for(const s of CFG.staff) if(!s.team) s.team = ['dungdp7','ngoclh9'].includes(s.acc) ? 'TT' : 'CP';
+    } else {
+      CFG = JSON.parse(JSON.stringify(DEFAULT_CFG));
+      cfgIsDefault = true;
+      if(USER_ROLE === 'admin') await FBDB.ref('v3/kpiConfig').set(CFG);
+    }
+  }catch(e){
+    console.warn('Firebase config load failed, using localStorage fallback:', e);
+    loadCfg();
+  }
+}
+
+async function fbSaveCfg(){
+  if(USER_ROLE !== 'admin') return;
+  try{
+    await FBDB.ref('v3/kpiConfig').set(CFG);
+    cfgIsDefault = false;
+    renderBanner();
+  }catch(e){ console.error('Firebase config save failed:', e); alert('Lỗi lưu cấu hình: '+e.message); }
+}
+
+async function fbLoadData(){
+  try{
+    const snap = await FBDB.ref('v3/kpiData').once('value');
+    if(!snap.exists()) return false;
+    const d = snap.val();
+    DERIVED = {
+      pendA: d.pendA || [],
+      pendB: d.pendB || [],
+      done: d.done || [],
+      doneTT: d.doneTT || [],
+      excludedRecv: d.stats?.excludedRecv || 0,
+      total: d.stats?.total || 0,
+      months: new Set(d.stats?.months || []),
+    };
+    FILES = [{name:'Firebase (cập nhật '+(d.updatedAt?new Date(d.updatedAt).toLocaleString('vi-VN'):'?')+')', rows: DERIVED.total}];
+    dataSavedAt = d.updatedAt;
+    renderFileBadges(); renderStatLine(); renderAll();
+    return true;
+  }catch(e){ console.warn('Firebase data load failed:', e); return false; }
+}
+
+async function fbPushData(){
+  if(USER_ROLE !== 'admin' || !DERIVED) return;
+  try{
+    await FBDB.ref('v3/kpiData').set({
+      updatedAt: new Date().toISOString(),
+      stats: {total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months]},
+      pendA: DERIVED.pendA,
+      pendB: DERIVED.pendB,
+      done: DERIVED.done,
+      doneTT: DERIVED.doneTT,
+    });
+    showToast('✓ Đã đẩy dữ liệu lên Firebase', 3000);
+  }catch(e){ console.error('Firebase data push failed:', e); alert('Lỗi đẩy dữ liệu: '+e.message); }
+}
+
+// Override saveCfg to use Firebase
+saveCfg = fbSaveCfg;
+</script>
+</body>
+</html>
