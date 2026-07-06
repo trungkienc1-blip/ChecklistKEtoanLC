@@ -1536,6 +1536,9 @@ fbAuth.onAuthStateChanged(async user => {
   const barrier = document.getElementById('authBarrier');
   if(!user){
     if(window.parent !== window){
+      const e = localStorage.getItem('_keto_e');
+      const p = localStorage.getItem('_keto_p');
+      if(e && p){ try{ await fbAuth.signInWithEmailAndPassword(e, atob(p)); }catch(err){} return; }
       setTimeout(() => {
         if(!fbAuth.currentUser) document.getElementById('authMsg').textContent = '⚠ Chưa đăng nhập — vui lòng mở qua App Kế Toán.';
       }, 10000);

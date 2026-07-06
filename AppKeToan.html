@@ -158,14 +158,18 @@ async function doLogin(){
   $('err').textContent='';
   if(!email || !pass){ $('err').textContent='Vui lòng nhập đủ email và mật khẩu'; return; }
   $('btnLogin').disabled = true; $('btnLogin').textContent='Đang xác thực…';
-  try{ await signInWithEmailAndPassword(auth, email, pass); }
-  catch(e){
+  try{ await signInWithEmailAndPassword(auth, email, pass);
+    localStorage.setItem('_keto_e', email);
+    localStorage.setItem('_keto_p', btoa(pass));
+  }catch(e){
     const m = {'auth/invalid-credential':'Email hoặc mật khẩu không đúng','auth/wrong-password':'Sai mật khẩu','auth/user-not-found':'Email không tồn tại','auth/invalid-email':'Email không hợp lệ','auth/too-many-requests':'Thử quá nhiều lần, chờ ít phút'};
     $('err').textContent = m[e.code] || ('Lỗi: '+e.message);
   }finally{ $('btnLogin').disabled=false; $('btnLogin').textContent='Đăng nhập'; }
 }
 $('btnLogout').addEventListener('click', ()=>{
   // reset iframe để phiên sau nạp lại sạch
+  localStorage.removeItem('_keto_e');
+  localStorage.removeItem('_keto_p');
   framesLoaded={checklist:false,kpi:false};
   $('frame-checklist').src='about:blank'; $('frame-kpi').src='about:blank';
   signOut(auth);

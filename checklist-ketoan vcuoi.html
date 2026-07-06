@@ -396,10 +396,11 @@ onAuthStateChanged(auth, async user => {
 
   if (!user) {
     if (window.parent !== window) {
-      // Trong iframe (AppKeToan): chờ auth resolve từ IndexedDB, không hiện login
+      const e = localStorage.getItem('_keto_e');
+      const p = localStorage.getItem('_keto_p');
+      if(e && p){ try{ await signInWithEmailAndPassword(auth, e, atob(p)); }catch(err){} }
       return;
     }
-    // Mở trực tiếp: hiện form login
     meUser  = '';
     isAdmin = false;
     document.getElementById('login-bg').style.display = 'flex';
