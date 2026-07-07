@@ -519,7 +519,8 @@ async function autoLoadLatest(force){
     const head = await fetch(AUTO_FILE, {method:'HEAD', cache:'no-store'});
     if(!head.ok){ if(force) alert('Chưa thấy file '+AUTO_FILE+' trong thư mục. Hãy chạy tải báo cáo trước.'); return false; }
     const mtime = head.headers.get('Last-Modified') || '';
-    if(!force && mtime && mtime === localStorage.getItem(AUTO_MTIME_KEY)) return false; // đã nạp bản này rồi
+    const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+    if(!force && !isLocal && mtime && mtime === localStorage.getItem(AUTO_MTIME_KEY)) return false;
     const buf = await (await fetch(AUTO_FILE, {cache:'no-store'})).arrayBuffer();
     const wb = XLSX.read(new Uint8Array(buf), {type:'array'});
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, defval:null});
