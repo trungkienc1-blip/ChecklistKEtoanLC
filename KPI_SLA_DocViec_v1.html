@@ -118,8 +118,16 @@
   <footer class="note">Cấu hình và dữ liệu lưu trên Firebase — mọi thành viên đều thấy cùng dữ liệu.</footer>
 </div>
 <div id="authBarrier" style="position:fixed;inset:0;background:#f4f3ef;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px">
-  <div style="width:28px;height:28px;border:3px solid #e2e0d8;border-top-color:#2d6a4f;border-radius:50%;animation:sp .8s linear infinite"></div>
+  <div id="authSpinner" style="width:28px;height:28px;border:3px solid #e2e0d8;border-top-color:#2d6a4f;border-radius:50%;animation:sp .8s linear infinite"></div>
   <div id="authMsg" style="font-size:13px;color:#6b6960">Đang xác thực…</div>
+  <div id="authLogin" style="display:none;background:#fff;border-radius:14px;padding:30px;width:360px;max-width:calc(100vw - 2rem);box-shadow:0 10px 40px rgba(0,0,0,.15);margin-top:10px">
+    <h2 style="font-size:18px;margin-bottom:4px">🔐 Đăng nhập</h2>
+    <div style="font-size:13px;color:#6b6960;margin-bottom:20px">Dùng email &amp; mật khẩu được cấp</div>
+    <div style="margin-bottom:14px"><label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b6960;font-weight:600;margin-bottom:5px">Email</label><input type="email" id="kpiEmail" placeholder="ten@fpt.com" autocomplete="username" style="width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid #e2e0d8;border-radius:8px;outline:none;box-sizing:border-box"></div>
+    <div style="margin-bottom:14px"><label style="display:block;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#6b6960;font-weight:600;margin-bottom:5px">Mật khẩu</label><input type="password" id="kpiPass" placeholder="••••••••" autocomplete="current-password" style="width:100%;font-family:inherit;font-size:14px;padding:10px 12px;border:1px solid #e2e0d8;border-radius:8px;outline:none;box-sizing:border-box"></div>
+    <div id="kpiErr" style="font-size:12.5px;color:#b5451b;min-height:18px;margin-bottom:8px"></div>
+    <button id="kpiBtnLogin" style="width:100%;font-family:inherit;font-size:14px;font-weight:600;padding:11px;border:none;border-radius:9px;background:#2d6a4f;color:#fff;cursor:pointer" onclick="kpiDoLogin()">Đăng nhập</button>
+  </div>
 </div>
 
 <script>
@@ -1552,7 +1560,9 @@ fbAuth.onAuthStateChanged(async user => {
       }, 10000);
       return;
     }
-    document.getElementById('authMsg').textContent = '⚠ Chưa đăng nhập — vui lòng mở qua App Kế Toán.';
+    document.getElementById('authSpinner').style.display = 'none';
+    document.getElementById('authMsg').textContent = '';
+    document.getElementById('authLogin').style.display = 'block';
     return;
   }
   const info = FB_EMAIL_MAP[(user.email||'').toLowerCase()] || {name:(user.email||'').split('@')[0], role:'member'};
@@ -1666,6 +1676,30 @@ async function fbPushData(){
 
 // Override saveCfg to use Firebase
 saveCfg = fbSaveCfg;
+
+async function kpiDoLogin(){
+  const email = document.getElementById('kpiEmail').value.trim();
+  const pass = document.getElementById('kpiPass').value;
+  const err = document.getElementById('kpiErr');
+  const btn = document.getElementById('kpiBtnLogin');
+  err.textContent = '';
+  if(!email || !pass){ err.textContent = 'Vui lòng nhập đủ email và mật khẩu'; return; }
+  btn.disabled = true; btn.textContent = 'Đang xác thực…';
+  try{
+    await fbAuth.signInWithEmailAndPassword(email, pass);
+    localStorage.setItem('_keto_e', email);
+    localStorage.setItem('_keto_p', btoa(pass));
+  }catch(e){
+    const m = {'auth/invalid-credential':'Email hoặc mật khẩu không đúng','auth/wrong-password':'Sai mật khẩu','auth/user-not-found':'Email không tồn tại','auth/invalid-email':'Email không hợp lệ','auth/too-many-requests':'Thử quá nhiều lần, chờ ít phút'};
+    err.textContent = m[e.code] || ('Lỗi: '+e.message);
+  }finally{ btn.disabled = false; btn.textContent = 'Đăng nhập'; }
+}
+document.addEventListener('DOMContentLoaded', ()=>{
+  const p = document.getElementById('kpiPass');
+  const e = document.getElementById('kpiEmail');
+  if(p) p.addEventListener('keydown', ev=>{ if(ev.key==='Enter') kpiDoLogin(); });
+  if(e) e.addEventListener('keydown', ev=>{ if(ev.key==='Enter') document.getElementById('kpiPass').focus(); });
+});
 
 async function fbLoadReassign(){
   try{
