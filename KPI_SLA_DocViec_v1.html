@@ -709,7 +709,7 @@ const STATUS_META = {
 };
 
 /* ════════════════ TAB ĐỐC VIỆC ════════════════ */
-let docFilter = {person:'', group:'', type:'', status:''};
+let docFilter = {person:'', group:'', type:'', status:'', searchMa:'', searchMuc:'', searchCreator:''};
 function renderDoc(){
   const el = document.getElementById('tab-doc');
   if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
@@ -750,12 +750,18 @@ function renderDoc(){
   }).join('');
 
   // rows
+  const sma = (docFilter.searchMa||'').toLowerCase();
+  const smuc = (docFilter.searchMuc||'').toLowerCase();
+  const scr = (docFilter.searchCreator||'').toLowerCase();
   const rowsA = A.filter(p=>{
     const key = p.person || '— Chưa gán (lead check)';
     if(docFilter.person && key!==docFilter.person) return false;
     if(docFilter.group && p.group!==docFilter.group) return false;
     if(docFilter.type && docFilter.type!=='A') return false;
     if(docFilter.status && p.st!==docFilter.status) return false;
+    if(sma && !String(p.ma).toLowerCase().includes(sma)) return false;
+    if(smuc && !String(p.muc||'').toLowerCase().includes(smuc)) return false;
+    if(scr && !String(p.creator||'').toLowerCase().includes(scr)) return false;
     return true;
   }).sort((x,y)=>y.days-x.days);
   const rowsB = B.filter(p=>{
@@ -763,6 +769,9 @@ function renderDoc(){
     if(docFilter.group && p.group!==docFilter.group) return false;
     if(docFilter.type && docFilter.type!=='B') return false;
     if(docFilter.status) return false;
+    if(sma && !String(p.ma).toLowerCase().includes(sma)) return false;
+    if(smuc && !String(p.muc||'').toLowerCase().includes(smuc)) return false;
+    if(scr && !String(p.creator||'').toLowerCase().includes(scr)) return false;
     return true;
   }).sort((x,y)=>y.days-x.days);
 
@@ -785,6 +794,7 @@ function renderDoc(){
       <td><span class="grp-tag">${esc(g.name)}${p.sub?' · '+esc(p.sub):''}</span></td>
       <td>${esc(String(p.muc).slice(0,90))}</td>
       <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+      <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
       <td class="num">${p.days.toFixed(0)}</td>
       <td class="num mut">${p.sla}</td>
       <td><span class="pill ${sm.cls}">${sm.lbl}</span></td>
@@ -797,6 +807,7 @@ function renderDoc(){
       <td><span class="grp-tag">${esc(grpById(p.group).name)}</span></td>
       <td>${esc(String(p.muc).slice(0,90))}</td>
       <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+      <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
       <td class="num">${p.days.toFixed(0)}</td>
       <td class="num mut">${CFG.b5Days}</td>
       <td>${p.late?'<span class="pill p-b5">Cần chuyển Chief</span>':'<span class="pill p-ok">Còn hạn</span>'}</td>
@@ -837,11 +848,14 @@ function renderDoc(){
         <select onchange="docFilter.status=this.value;renderDoc()">${stOpts}</select>
         ${docFilter.person?`<span class="chip on" onclick="docSelPerson('')">${esc(docFilter.person)} ✕</span>`:''}
         <span style="flex:1"></span>
+        <input type="text" placeholder="🔍 Mã ĐN" value="${esc(docFilter.searchMa)}" onkeyup="docFilter.searchMa=this.value;renderDoc()" style="width:90px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
+        <input type="text" placeholder="🔍 Nội dung" value="${esc(docFilter.searchMuc)}" onkeyup="docFilter.searchMuc=this.value;renderDoc()" style="width:120px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
+        <input type="text" placeholder="🔍 Người tạo" value="${esc(docFilter.searchCreator)}" onkeyup="docFilter.searchCreator=this.value;renderDoc()" style="width:100px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
         <button class="btn btn-success" onclick="exportDoc()">⬇ Xuất Excel</button>
       </div>
       <div class="tbl-scroll"><table>
-        <thead><tr><th>Mã ĐN</th><th>Loại</th><th>Người phụ trách</th><th>Nhóm CP</th><th>Nội dung</th><th>Đơn vị</th><th>Ngày chờ</th><th>SLA</th><th>Trạng thái</th></tr></thead>
-        <tbody>${trA+trB || '<tr><td colspan="9" class="empty">Không có hồ sơ khớp bộ lọc.</td></tr>'}</tbody>
+        <thead><tr><th>Mã ĐN</th><th>Loại</th><th>Người phụ trách</th><th>Nhóm CP</th><th>Nội dung</th><th>Đơn vị</th><th>Người tạo</th><th>Ngày chờ</th><th>SLA</th><th>Trạng thái</th></tr></thead>
+        <tbody>${trA+trB || '<tr><td colspan="10" class="empty">Không có hồ sơ khớp bộ lọc.</td></tr>'}</tbody>
       </table></div>
     </div>`;
 }
