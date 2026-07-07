@@ -341,7 +341,7 @@ function classify(muc, dv){
   if(px==='FMK' || px==='FPR' || RX.mkt_dv.test(dvl)) return {group:'mkt', sub:null, excluded:false};
   if(px==='PTDD' || dvl.includes('gpp') || dvl.includes('location') || RX.gpp.test(tl)) return {group:'gpp', sub:null, excluded:false};
   if(px==='CSVC' || px==='GSXD' || RX.csvc_dv.test(dvl) || (RX.csvc_txt.test(tl) && RX.csvc_dv.test(dvl))) return {group:'csvc', sub:null, excluded:false};
-  if(/^(LC\d+|VX\d+)-/.test(t) || /(?:^|\.)(?:LC|VX)\s/.test(dvs) || RX.shop_num.test(tl) || RX.shop_kv.test(tl) || RX.shop_txt.test(tl)) return {group:'shop', sub:null, excluded:false};
+  if((/^(LC\d+|VX\d+)-/.test(t) || /(?:^|\.)(?:LC|VX)\s/.test(dvs) || RX.shop_num.test(tl) || RX.shop_kv.test(tl) || RX.shop_txt.test(tl)) && !RX.bo_dv.test(dvl)) return {group:'shop', sub:null, excluded:false};
   if(BO_PREFIX.includes(px) || RX.bo_txt.test(tl) || RX.bo_dv.test(dvl)) return {group:'bo', sub:null, excluded:false};
   return {group:'khac', sub:null, excluded:false};
 }
@@ -1580,6 +1580,7 @@ fbAuth.onAuthStateChanged(async user => {
   }
   await fbLoadReassign();
   renderBanner(); renderFileBadges(); renderAll();
+  if(USER_ROLE === 'admin') autoLoadLatest(false);
 });
 
 function applyRole(){
