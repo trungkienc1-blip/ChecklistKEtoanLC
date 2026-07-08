@@ -322,9 +322,9 @@ function migrateCfg(){
   const key = r => [r.group, r.region||'', r.dvPat||'', r.textPat||'', r.creatorPat||''].join('|');
   const have = new Set((CFG.assignRules||[]).map(key));
   for(const r of DEFAULT_CFG.assignRules) if(!have.has(key(r))) CFG.assignRules.push({...r});
-  // 4) cfgVer 12: xóa rule catchall xaydung→Huongdb + xóa csvc thi-công→Huongdb (không có creatorPat)
+  // 4) cfgVer 13: xóa rule catchall xaydung→Huongdb + xóa csvc thi-công→Huongdb (không có creatorPat)
   //    Giờ dùng creatorPat trong assignRules thay vì creatorPersonAll.
-  if(old < 12){
+  if(old < 13){
     CFG.assignRules = (CFG.assignRules||[]).filter(r => {
       if(r.group==='xaydung' && !r.region && !r.dvPat && !r.textPat && !r.creatorPat) return false;
       if(r.group==='csvc' && !r.region && !r.dvPat && /thi công|xây dựng/i.test(r.textPat||'') && !r.creatorPat) return false;
