@@ -286,7 +286,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 13,
+  cfgVer: 14,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -324,7 +324,7 @@ function migrateCfg(){
   for(const r of DEFAULT_CFG.assignRules) if(!have.has(key(r))) CFG.assignRules.push({...r});
   // 4) cfgVer 13: xóa rule catchall xaydung→Huongdb + xóa csvc thi-công→Huongdb (không có creatorPat)
   //    Giờ dùng creatorPat trong assignRules thay vì creatorPersonAll.
-  if(old < 13){
+  if(old < 14){
     CFG.assignRules = (CFG.assignRules||[]).filter(r => {
       if(r.group==='xaydung' && !r.region && !r.dvPat && !r.textPat && !r.creatorPat) return false;
       if(r.group==='csvc' && !r.region && !r.dvPat && /thi công|xây dựng/i.test(r.textPat||'') && !r.creatorPat) return false;
