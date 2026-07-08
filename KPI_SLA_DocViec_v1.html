@@ -228,6 +228,7 @@ const DEFAULT_CFG = {
     {group:'ctp',     region:'',     dvPat:'Ban Xay dung va co so vat chat-virtual', textPat:'miền trung', person:'Diepdt'},
     {group:'khac',    region:'',     dvPat:'ecom|cskh|tiep nhan cuoc|khieu nai|phap che|ho|doi ngoai', textPat:'', person:'Thydu'},
     {group:'khac',    region:'',     dvPat:'', textPat:'RSM|PRSM', person:'Nhanntt'},
+    {group:'ctp',     region:'',     dvPat:'dao tao duoc mien Nam', textPat:'thực tập|thuc tap', person:'Nhanntt'},
   ],
   ctpDvRules: [
     {dvPat:'Kho tong Vaccine Mien Nam|kinh doanh truc tuyen|hub', person:'Thydu'},
@@ -279,7 +280,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 9,
+  cfgVer: 10,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -453,6 +454,15 @@ function assignPerson(rec){
   if(CFG.creatorPersonAll && CFG.creatorPersonAll[cr]) return CFG.creatorPersonAll[cr];
   if(rec.group==='thuenha' && CFG.creatorPerson && CFG.creatorPerson[cr]) return CFG.creatorPerson[cr];
   if(rec.group === 'ctp'){
+    // 0) quy tắc gán theo NỘI DUNG (assignRules nhóm ctp có textPat) — ưu tiên cao nhất,
+    //    vì nội dung cụ thể hơn nhóm con/đơn vị. VD hồ sơ "thực tập" của phòng đào tạo → Nhanntt
+    //    (không bị rule đơn vị "đào tạo → Thydu" ở ctpDvRules bắt trước).
+    for(const r of CFG.assignRules){
+      if(r.group!=='ctp' || !r.textPat || !r.person) continue;
+      if(r.region && r.region !== rec.region) continue;
+      try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) continue; }catch(e){ continue; }
+      try{ if(new RegExp(r.textPat,'i').test(rec.muc)) return r.person; }catch(e){}
+    }
     // 1) nhóm con CTP có người phụ trách
     if(rec.sub && rec.sub !== 'CHUNG'){
       const s = CFG.ctpSubs.find(x=>x.id===rec.sub);
