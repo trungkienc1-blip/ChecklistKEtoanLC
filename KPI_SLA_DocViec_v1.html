@@ -776,6 +776,16 @@ function recompute(){
   if(kpiMonths!==null) for(const m of D.months) kpiMonths.add(m);
   renderStatLine();
 }
+function refreshSLA(){
+  if(!DERIVED || !DERIVED.pendA) return;
+  for(const p of DERIVED.pendA){
+    if(REGROUP[p.ma]){ const g = grpById(REGROUP[p.ma].group); p.group = g.id; p.sla = g.sla; p.ov = g.ov; }
+    else { const g = grpById(p.group); p.sla = g.sla; p.ov = g.ov; }
+    let st; if(p.days > p.ov) st='bad'; else if(p.days > p.sla) st='late';
+    else if(p.days >= p.sla*CFG.warnPct/100) st='warn'; else st='ok';
+    p.st = st;
+  }
+}
 
 function pctile(arr, p){
   if(!arr.length) return null;
@@ -1481,46 +1491,46 @@ function renderCfg(){
     const btns = arr.length ? ['75','80','90'].map(p=>`<button class="btn btn-ghost small" style="padding:2px 7px" onclick="suggestSla(${i},.${p})">P${p}</button>`).join(' ') : '';
     return `<tr>
       <td><b>${esc(g.name)}</b><div class="small mut">${ref}</div></td>
-      <td><input type="number" min="0" step="0.5" value="${g.sla}" onchange="CFG.groups[${i}].sla=parseFloat(this.value)||0;saveCfg();recompute()"></td>
-      <td><input type="number" min="0" step="0.5" value="${g.ov}" onchange="CFG.groups[${i}].ov=parseFloat(this.value)||0;saveCfg();recompute()"></td>
+      <td><input type="number" min="0" step="0.5" value="${g.sla}" onchange="CFG.groups[${i}].sla=parseFloat(this.value)||0;saveCfg();recompute();refreshSLA()"></td>
+      <td><input type="number" min="0" step="0.5" value="${g.ov}" onchange="CFG.groups[${i}].ov=parseFloat(this.value)||0;saveCfg();recompute();refreshSLA()"></td>
       <td>${btns}</td>
     </tr>`;
   }).join('');
 
   const subRows = CFG.ctpSubs.map((s,i)=>`<tr>
     <td>${esc(s.name)}</td>
-    <td><input type="text" value="${esc(s.person)}" placeholder="(chưa gán)" onchange="CFG.ctpSubs[${i}].person=this.value.trim();saveCfg();recompute()"></td>
+    <td><input type="text" value="${esc(s.person)}" placeholder="(chưa gán)" onchange="CFG.ctpSubs[${i}].person=this.value.trim();saveCfg();recompute();refreshSLA()"></td>
   </tr>`).join('');
 
   const grpSel = i => CFG.groups.map(g=>`<option value="${g.id}" ${CFG.assignRules[i].group===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
   const regSel = i => ['','HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}" ${CFG.assignRules[i].region===r?'selected':''}>${r?REGION_LABEL[r]:'— mọi vùng —'}</option>`).join('');
   const ruleRows = CFG.assignRules.map((r,i)=>`<tr>
-    <td><select onchange="CFG.assignRules[${i}].group=this.value;saveCfg();recompute()">${grpSel(i)}</select></td>
-    <td><select onchange="CFG.assignRules[${i}].region=this.value;saveCfg();recompute()">${regSel(i)}</select></td>
-    <td><input type="text" style="width:110px" value="${esc(r.dvPat||'')}" placeholder="regex đơn vị" onchange="CFG.assignRules[${i}].dvPat=this.value;saveCfg();recompute()"></td>
-    <td><input type="text" style="width:150px" value="${esc(r.textPat||'')}" placeholder="regex nội dung" onchange="CFG.assignRules[${i}].textPat=this.value;saveCfg();recompute()"></td>
-    <td><input type="text" style="width:100px" value="${esc(r.creatorPat||'')}" placeholder="regex người tạo" onchange="CFG.assignRules[${i}].creatorPat=this.value;saveCfg();recompute()"></td>
-    <td><input type="text" style="width:90px" value="${esc(r.person||'')}" onchange="CFG.assignRules[${i}].person=this.value.trim();saveCfg();recompute()"></td>
-    <td><button class="rowbtn" onclick="CFG.assignRules.splice(${i},1);saveCfg();recompute();renderCfg()">✕</button></td>
+    <td><select onchange="CFG.assignRules[${i}].group=this.value;saveCfg();recompute();refreshSLA()">${grpSel(i)}</select></td>
+    <td><select onchange="CFG.assignRules[${i}].region=this.value;saveCfg();recompute();refreshSLA()">${regSel(i)}</select></td>
+    <td><input type="text" style="width:110px" value="${esc(r.dvPat||'')}" placeholder="regex đơn vị" onchange="CFG.assignRules[${i}].dvPat=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="text" style="width:150px" value="${esc(r.textPat||'')}" placeholder="regex nội dung" onchange="CFG.assignRules[${i}].textPat=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="text" style="width:100px" value="${esc(r.creatorPat||'')}" placeholder="regex người tạo" onchange="CFG.assignRules[${i}].creatorPat=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="text" style="width:90px" value="${esc(r.person||'')}" onchange="CFG.assignRules[${i}].person=this.value.trim();saveCfg();recompute();refreshSLA()"></td>
+    <td><button class="rowbtn" onclick="CFG.assignRules.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
   </tr>`).join('');
 
   const crRows = Object.entries(CFG.creatorRegion).map(([k,v])=>`<tr>
     <td class="mono">${esc(k)}</td>
-    <td><select onchange="CFG.creatorRegion['${esc(k)}']=this.value;saveCfg();recompute()">${['HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}" ${v===r?'selected':''}>${REGION_LABEL[r]}</option>`).join('')}</select></td>
-    <td><button class="rowbtn" onclick="delete CFG.creatorRegion['${esc(k)}'];saveCfg();recompute();renderCfg()">✕</button></td>
+    <td><select onchange="CFG.creatorRegion['${esc(k)}']=this.value;saveCfg();recompute();refreshSLA()">${['HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}" ${v===r?'selected':''}>${REGION_LABEL[r]}</option>`).join('')}</select></td>
+    <td><button class="rowbtn" onclick="delete CFG.creatorRegion['${esc(k)}'];saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
   </tr>`).join('');
 
   const staffRows = CFG.staff.map((s,i)=>{
     const dc = s.team==='TT' ? 't3' : 'c4';               // chỉ tiêu deadline báo cáo theo team
     const hasReport = !((s.naCrits||[]).includes(dc));
     return `<tr>
-    <td><input type="text" style="width:95px" value="${esc(s.name)}" onchange="CFG.staff[${i}].name=this.value.trim();saveCfg();recompute()"></td>
-    <td><input type="text" style="width:110px" value="${esc(s.acc)}" onchange="CFG.staff[${i}].acc=this.value.trim().toLowerCase();saveCfg();recompute()"></td>
+    <td><input type="text" style="width:95px" value="${esc(s.name)}" onchange="CFG.staff[${i}].name=this.value.trim();saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="text" style="width:110px" value="${esc(s.acc)}" onchange="CFG.staff[${i}].acc=this.value.trim().toLowerCase();saveCfg();recompute();refreshSLA()"></td>
     <td><select onchange="CFG.staff[${i}].team=this.value;saveCfg();renderCfg()">
       <option value="CP" ${s.team!=='TT'?'selected':''}>CP</option>
       <option value="TT" ${s.team==='TT'?'selected':''}>TT</option></select></td>
     <td class="num"><input type="checkbox" ${hasReport?'checked':''} title="Bỏ chọn nếu nhân viên KHÔNG có báo cáo định kỳ — chỉ tiêu deadline báo cáo sẽ N/A và trọng số chia lại cho các chỉ tiêu còn lại" onchange="toggleNaCrit(${i},'${dc}',!this.checked)"></td>
-    <td><button class="rowbtn" onclick="CFG.staff.splice(${i},1);saveCfg();recompute();renderCfg()">✕</button></td>
+    <td><button class="rowbtn" onclick="CFG.staff.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
   </tr>`;}).join('');
 
   el.innerHTML = `
@@ -1529,8 +1539,8 @@ function renderCfg(){
       <div class="card-title">📏 SLA theo nhóm chi phí (ngày) — <span class="mut">tham chiếu Median/P75/P80/P90 tính từ dữ liệu đã upload</span></div>
       <table><thead><tr><th>Nhóm</th><th>SLA</th><th>Ngưỡng quá hạn</th><th>Gợi ý SLA</th></tr></thead><tbody>${slaRows}</tbody></table>
       <div class="filters" style="margin-top:10px">
-        <label class="small">Ngưỡng nhắc "quên chuyển B5" (ngày): <input type="number" min="0" value="${CFG.b5Days}" onchange="CFG.b5Days=parseFloat(this.value)||0;saveCfg();recompute()"></label>
-        <label class="small">"Sắp trễ" từ % SLA: <input type="number" min="0" max="100" value="${CFG.warnPct}" onchange="CFG.warnPct=parseFloat(this.value)||70;saveCfg();recompute()"></label>
+        <label class="small">Ngưỡng nhắc "quên chuyển B5" (ngày): <input type="number" min="0" value="${CFG.b5Days}" onchange="CFG.b5Days=parseFloat(this.value)||0;saveCfg();recompute();refreshSLA()"></label>
+        <label class="small">"Sắp trễ" từ % SLA: <input type="number" min="0" max="100" value="${CFG.warnPct}" onchange="CFG.warnPct=parseFloat(this.value)||70;saveCfg();recompute();refreshSLA()"></label>
       </div>
     </div>
     <div class="card">
@@ -1554,7 +1564,7 @@ function renderCfg(){
       <div class="filters" style="margin-top:8px">
         <input type="text" id="newCrAcc" placeholder="account (vd: hangnn3)">
         <select id="newCrReg">${['HNI','MB','MB1','MB2','MT','MD','MTAY','HCM','HCM1','HCM2'].map(r=>`<option value="${r}">${REGION_LABEL[r]}</option>`).join('')}</select>
-        <button class="btn btn-ghost" onclick="const a=document.getElementById('newCrAcc').value.trim().toLowerCase();if(a){CFG.creatorRegion[a]=document.getElementById('newCrReg').value;saveCfg();recompute();renderCfg()}">+ Thêm</button>
+        <button class="btn btn-ghost" onclick="const a=document.getElementById('newCrAcc').value.trim().toLowerCase();if(a){CFG.creatorRegion[a]=document.getElementById('newCrReg').value;saveCfg();recompute();refreshSLA();renderCfg()}">+ Thêm</button>
       </div>
     </div>
     <div class="card">
@@ -1562,9 +1572,9 @@ function renderCfg(){
       <div class="tbl-scroll" style="max-height:260px"><table><thead><tr><th>Tên</th><th>Account</th><th>Team</th><th title="Có báo cáo định kỳ? Bỏ chọn → chỉ tiêu deadline báo cáo N/A, chia lại trọng số">BC định kỳ</th><th></th></tr></thead><tbody>${staffRows}</tbody></table></div>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.staff.push({name:'',acc:'',team:'CP'});saveCfg();renderCfg()">+ Thêm nhân sự</button>
       <div class="small mut" style="margin-top:8px">Loại trừ (receiver team khác, cách nhau dấu phẩy):<br>
-        <input type="text" style="width:100%" value="${esc(CFG.excludeRecv.join(', '))}" onchange="CFG.excludeRecv=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute()"></div>
+        <input type="text" style="width:100%" value="${esc(CFG.excludeRecv.join(', '))}" onchange="CFG.excludeRecv=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute();refreshSLA()"></div>
       <div class="small mut" style="margin-top:6px">Lead hỗ trợ (không xếp hạng):<br>
-        <input type="text" style="width:100%" value="${esc(CFG.leadAcc.join(', '))}" onchange="CFG.leadAcc=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute()"></div>
+        <input type="text" style="width:100%" value="${esc(CFG.leadAcc.join(', '))}" onchange="CFG.leadAcc=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute();refreshSLA()"></div>
     </div>
   </div>
   <div class="card">
