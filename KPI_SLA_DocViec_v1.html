@@ -138,6 +138,7 @@ const DEFAULT_CFG = {
   groups: [
     {id:'dien',    name:'HC: Tiền điện',      sla:1,  ov:3},
     {id:'thuenha', name:'HC: Thuê nhà/kho',   sla:3,  ov:5},
+    {id:'thuekho', name:'Thuê kho Shop',       sla:3,  ov:5},
     {id:'vaccine', name:'HC Vaccine (TTTC)',  sla:5,  ov:10},
     {id:'bo',      name:'Khối BO',            sla:5,  ov:10},
     {id:'kho',     name:'CP Kho',             sla:5,  ov:10},
@@ -179,6 +180,14 @@ const DEFAULT_CFG = {
     {group:'thuenha', region:'MD',   dvPat:'', textPat:'', person:'Thydg'},
     {group:'thuenha', region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
     {group:'thuenha', region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
+    {group:'thuekho', region:'HCM1', dvPat:'', textPat:'', person:'Huongdb'},
+    {group:'thuekho', region:'HCM2', dvPat:'', textPat:'', person:'Kietpt'},
+    {group:'thuekho', region:'MB',   dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuekho', region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuekho', region:'MT',   dvPat:'', textPat:'', person:'Chilhk'},
+    {group:'thuekho', region:'MD',   dvPat:'', textPat:'', person:'Thydg'},
+    {group:'thuekho', region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'thuekho', region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
     {group:'vaccine', region:'',     dvPat:'', textPat:'', person:'Ngocnd'},
     {group:'csvc',    region:'',     dvPat:'', textPat:'xây dựng|xay dung|thi công|thi cong|5%|cải tạo|cai tao|bảo dưỡng máy lạnh|lắp đặt đèn|đèn led', creatorPat:'nguyenpnt2|yenvt20', person:'Huongdb'},
     {group:'csvc',    region:'HNI',  dvPat:'', textPat:'', person:'Diepdt'},
@@ -286,7 +295,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 14,
+  cfgVer: 15,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -381,13 +390,16 @@ function classify(muc, dv){
   const t = String(muc||''); const tl = t.toLowerCase();
   const dvs = String(dv||''); const dvl = dvs.toLowerCase();
   if(/^(?:csvc|gsxd)\s*:/i.test(t)) return {group:'csvc', sub:null, excluded:false};
+  if(RX.dien.test(tl))    return {group:'dien', sub:null, excluded:false};
+  if(/thuê trọ|thue tro/i.test(tl)) return {group:'dieudong', sub:null, excluded:false};
+  if(/thuê kho|thue kho/i.test(tl) && (/^(LC|VX)\d/i.test(t) || /(?:^|\.)(?:LC|VX)\s/.test(dvs) || RX.shop_num.test(tl) || RX.shop_kv.test(tl) || /^\(?(?:hcm|mb|md|mt)\d?\)?[\s_\-]*\d{5}/i.test(tl)))
+    return {group:'thuekho', sub:null, excluded:false};
+  if(RX.thuenha.test(tl)) return {group:'thuenha', sub:null, excluded:false};
   const px = getPrefix(t);
   if(tl.includes('ctp_') || CTP_PREFIX.includes(px) || RX.ctp.test(tl) || /taskfore/.test(dvl)){
     if(/lệnh điều động|lenh dieu dong/i.test(tl)) return {group:'dieudong', sub:null, excluded:false};
     return {group:'ctp', sub:ctpSub(t, tl, dvl), excluded:false};
   }
-  if(RX.dien.test(tl))    return {group:'dien', sub:null, excluded:false};
-  if(RX.thuenha.test(tl)) return {group:'thuenha', sub:null, excluded:false};
   if(dvl.includes('vx hanh chinh')) return {group:'vaccine', sub:null, excluded:false};
   if(px==='FMK' || px==='FPR' || RX.mkt_dv.test(dvl)) return {group:'mkt', sub:null, excluded:false};
   if(px==='PTDD') return {group:'ptdd', sub:null, excluded:false};
@@ -435,7 +447,7 @@ function detectRegion(muc, dv, creator, group){
   const cr = String(creator||'').split('@')[0].trim().toLowerCase();
   // Thuê nhà & điện: NGƯỜI TẠO quyết định vùng (ưu tiên hơn mã shop trong nội dung),
   // vì 1 admin tạo hồ sơ cho nhiều shop khác tỉnh nhưng do 1 kế toán theo khu xử lý.
-  if((group==='thuenha' || group==='dien') && cr && CFG.creatorRegion[cr]) return CFG.creatorRegion[cr];
+  if((group==='thuenha' || group==='thuekho' || group==='dien') && cr && CFG.creatorRegion[cr]) return CFG.creatorRegion[cr];
   const t = (String(muc||'') + ' ' + String(dv||'')).toLowerCase();
   if(/hni\b|hà nội|ha noi/.test(t)) return 'HNI';
   if(/miền bắc|mien bac/.test(t)) return 'MB';
@@ -474,7 +486,7 @@ function assignPerson(rec){
   const cr = String(rec.creator||'').split('@')[0].trim().toLowerCase();
   // creatorPersonAll: người tạo chuyên trách (admin kho tổng, GSXD...) -> người xử lý CỐ ĐỊNH, mọi nhóm
   if(CFG.creatorPersonAll && CFG.creatorPersonAll[cr]) return CFG.creatorPersonAll[cr];
-  if(rec.group==='thuenha' && CFG.creatorPerson && CFG.creatorPerson[cr]) return CFG.creatorPerson[cr];
+  if((rec.group==='thuenha' || rec.group==='thuekho') && CFG.creatorPerson && CFG.creatorPerson[cr]) return CFG.creatorPerson[cr];
   if(rec.group === 'ctp'){
     // 0) quy tắc gán cụ thể theo CẢ đơn vị + nội dung (assignRules ctp có ĐỦ dvPat & textPat)
     //    — ưu tiên trước nhóm con + ctpDvRules, vì "đơn vị + nội dung" cụ thể hơn "chỉ đơn vị".
@@ -813,6 +825,13 @@ const STATUS_META = {
 
 /* ════════════════ TAB ĐỐC VIỆC ════════════════ */
 let docFilter = {person:'', group:'', type:'', status:'', searchMa:'', searchMuc:'', searchCreator:''};
+let _docSearchTimer = 0, _docSearchFocus = '';
+function docSearch(field, val){
+  docFilter[field] = val;
+  _docSearchFocus = field;
+  clearTimeout(_docSearchTimer);
+  _docSearchTimer = setTimeout(()=>{ renderDoc(); }, 300);
+}
 function renderDoc(){
   const el = document.getElementById('tab-doc');
   if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
@@ -951,9 +970,9 @@ function renderDoc(){
         <select onchange="docFilter.status=this.value;renderDoc()">${stOpts}</select>
         ${docFilter.person?`<span class="chip on" onclick="docSelPerson('')">${esc(docFilter.person)} ✕</span>`:''}
         <span style="flex:1"></span>
-        <input type="text" placeholder="🔍 Mã ĐN" value="${esc(docFilter.searchMa)}" onkeyup="docFilter.searchMa=this.value;renderDoc()" style="width:90px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
-        <input type="text" placeholder="🔍 Nội dung" value="${esc(docFilter.searchMuc)}" onkeyup="docFilter.searchMuc=this.value;renderDoc()" style="width:120px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
-        <input type="text" placeholder="🔍 Người tạo" value="${esc(docFilter.searchCreator)}" onkeyup="docFilter.searchCreator=this.value;renderDoc()" style="width:100px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
+        <input type="text" placeholder="🔍 Mã ĐN" value="${esc(docFilter.searchMa)}" oninput="docSearch('searchMa',this.value)" data-sf="searchMa" style="width:90px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
+        <input type="text" placeholder="🔍 Nội dung" value="${esc(docFilter.searchMuc)}" oninput="docSearch('searchMuc',this.value)" data-sf="searchMuc" style="width:120px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
+        <input type="text" placeholder="🔍 Người tạo" value="${esc(docFilter.searchCreator)}" oninput="docSearch('searchCreator',this.value)" data-sf="searchCreator" style="width:100px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
         <button class="btn btn-success" onclick="exportDoc()">⬇ Xuất Excel</button>
       </div>
       <div class="tbl-scroll"><table>
@@ -961,6 +980,11 @@ function renderDoc(){
         <tbody>${trA+trB || '<tr><td colspan="10" class="empty">Không có hồ sơ khớp bộ lọc.</td></tr>'}</tbody>
       </table></div>
     </div>`;
+  if(_docSearchFocus){
+    const inp = el.querySelector('input[data-sf="'+_docSearchFocus+'"]');
+    if(inp){ inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+    _docSearchFocus = '';
+  }
 }
 function docSelPerson(n){ docFilter.person = (docFilter.person===n)?'':n; renderDoc(); }
 
