@@ -713,7 +713,7 @@ function workingDays(start, end){
   hours += hh(e) - WS;
   return Math.round(hours/WH*10)/10;
 }
-function grpById(id){ return CFG.groups.find(g=>g.id===id) || {name:id, sla:12, ov:18}; }
+function grpById(id){ return CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
 function staffName(acc){
   const s = CFG.staff.find(x=>x.acc===acc);
   if(s) return s.name;
@@ -820,7 +820,7 @@ const STATUS_META = {
   ok:  {lbl:'Còn hạn',       cls:'p-ok'},
   warn:{lbl:'Sắp trễ',       cls:'p-warn'},
   late:{lbl:'Trễ SLA',       cls:'p-late'},
-  bad: {lbl:'Quá hạn nặng',  cls:'p-bad'},
+  bad: {lbl:'Quá hạn',       cls:'p-bad'},
 };
 
 /* ════════════════ TAB ĐỐC VIỆC ════════════════ */
@@ -901,19 +901,24 @@ function renderDoc(){
   const stOpts = '<option value="">— Trạng thái —</option>'+Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}" ${docFilter.status===k?'selected':''}>${v.lbl}</option>`).join('');
 
   const staffOpts = (CFG.staff||[]).map(s=>s.name).sort();
+  const allGrps = CFG.groups;
   const trA = rowsA.map(p=>{
     const g = grpById(p.group); const sm = STATUS_META[p.st];
     const cur = p.person||'';
     const isReassigned = !!REASSIGN[p.ma];
+    const isRegrouped = !!REGROUP[p.ma];
     const selHtml = `<select class="reassign-sel${isReassigned?' reassigned':''}" onchange="fbReassign('${esc(p.ma)}',this.value)">
       <option value=""${!cur?' selected':''}>— Chưa gán —</option>
       ${staffOpts.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}
+    </select>`;
+    const grpSel = `<select class="reassign-sel${isRegrouped?' reassigned':''}" style="min-width:100px" onchange="fbRegroup('${esc(p.ma)}',this.value)">
+      ${allGrps.map(gx=>`<option value="${gx.id}"${gx.id===p.group?' selected':''}>${esc(gx.name)}</option>`).join('')}
     </select>`;
     return `<tr>
       <td class="mono">${esc(p.ma)}</td>
       <td><span class="pill p-grey">Chờ B4</span></td>
       <td>${selHtml}</td>
-      <td><span class="grp-tag">${esc(g.name)}${p.sub?' · '+esc(p.sub):''}</span></td>
+      <td>${grpSel}</td>
       <td>${esc(String(p.muc).slice(0,90))}</td>
       <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
       <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
@@ -949,7 +954,7 @@ function renderDoc(){
           <span class="pill p-ok">${cA.ok} còn hạn</span>
           <span class="pill p-warn">${cA.warn} sắp trễ</span>
           <span class="pill p-late">${cA.late} trễ SLA</span>
-          <span class="pill p-bad">${cA.bad} quá hạn nặng</span>
+          <span class="pill p-bad">${cA.bad} quá hạn</span>
         </div></div>
       <div style="border-left:1px solid var(--line);padding-left:22px">
         <div class="small mut">Đã B4, quên chuyển B5: <b style="color:var(--ink)">${B.length.toLocaleString('vi')}</b></div>
@@ -1522,7 +1527,7 @@ function renderCfg(){
   <div class="cfg-grid">
     <div class="card">
       <div class="card-title">📏 SLA theo nhóm chi phí (ngày) — <span class="mut">tham chiếu Median/P75/P80/P90 tính từ dữ liệu đã upload</span></div>
-      <table><thead><tr><th>Nhóm</th><th>SLA</th><th>Ngưỡng quá hạn nặng</th><th>Gợi ý SLA</th></tr></thead><tbody>${slaRows}</tbody></table>
+      <table><thead><tr><th>Nhóm</th><th>SLA</th><th>Ngưỡng quá hạn</th><th>Gợi ý SLA</th></tr></thead><tbody>${slaRows}</tbody></table>
       <div class="filters" style="margin-top:10px">
         <label class="small">Ngưỡng nhắc "quên chuyển B5" (ngày): <input type="number" min="0" value="${CFG.b5Days}" onchange="CFG.b5Days=parseFloat(this.value)||0;saveCfg();recompute()"></label>
         <label class="small">"Sắp trễ" từ % SLA: <input type="number" min="0" max="100" value="${CFG.warnPct}" onchange="CFG.warnPct=parseFloat(this.value)||70;saveCfg();recompute()"></label>
@@ -1722,6 +1727,7 @@ const FB_EMAIL_MAP = {
 let USER_ROLE = 'member';
 let FBDB = null;
 let REASSIGN = {}; // {ma: {person, by, at}}
+let REGROUP = {};  // {ma: {group, by, at}}
 
 const fbApp = firebase.initializeApp(FIREBASE_CONFIG, 'keto5-auth');
 const fbAuth = fbApp.auth();
@@ -1829,12 +1835,25 @@ function mergeReassign(){
   if(!DERIVED || !DERIVED.pendA) return;
   const activeMa = new Set(DERIVED.pendA.map(p=>p.ma));
   for(const p of DERIVED.pendA){
+    if(REGROUP[p.ma]){
+      const g = grpById(REGROUP[p.ma].group);
+      p.group = g.id; p.sla = g.sla; p.ov = g.ov;
+      let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
+      else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+      p.st = st;
+      p.person = assignPerson(p);
+    }
     if(REASSIGN[p.ma]) p.person = REASSIGN[p.ma].person;
   }
   const stale = Object.keys(REASSIGN).filter(ma=>!activeMa.has(ma));
   if(stale.length){
     for(const ma of stale) delete REASSIGN[ma];
     if(FBDB) for(const ma of stale) FBDB.ref('v3/reassign/'+ma).remove().catch(()=>{});
+  }
+  const staleG = Object.keys(REGROUP).filter(ma=>!activeMa.has(ma));
+  if(staleG.length){
+    for(const ma of staleG) delete REGROUP[ma];
+    if(FBDB) for(const ma of staleG) FBDB.ref('v3/regroup/'+ma).remove().catch(()=>{});
   }
 }
 
@@ -1885,10 +1904,20 @@ async function fbLoadReassign(){
   try{
     const snap = await FBDB.ref('v3/reassign').once('value');
     REASSIGN = snap.val() || {};
+    const snap2 = await FBDB.ref('v3/regroup').once('value');
+    REGROUP = snap2.val() || {};
     for(const p of DERIVED.pendA){
+      if(REGROUP[p.ma]){
+        const g = grpById(REGROUP[p.ma].group);
+        p.group = g.id; p.sla = g.sla; p.ov = g.ov;
+        let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
+        else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+        p.st = st;
+        p.person = assignPerson(p);
+      }
       if(REASSIGN[p.ma]) p.person = REASSIGN[p.ma].person;
     }
-  }catch(e){ console.warn('Load reassign failed:', e); }
+  }catch(e){ console.warn('Load reassign/regroup failed:', e); }
 }
 async function fbReassign(ma, person){
   const info = FB_EMAIL_MAP[(fbAuth.currentUser?.email||'').toLowerCase()] || {name:'?'};
@@ -1901,6 +1930,31 @@ async function fbReassign(ma, person){
   }catch(e){
     console.error('Save reassign failed:', e);
     alert('Lỗi lưu chuyển người: '+e.message+'\n\nCó thể do Firebase Rules chưa cho phép write vào v3/reassign.');
+  }
+  renderDoc();
+}
+async function fbRegroup(ma, groupId){
+  const info = FB_EMAIL_MAP[(fbAuth.currentUser?.email||'').toLowerCase()] || {name:'?'};
+  if(!groupId){
+    delete REGROUP[ma];
+    try{ await FBDB.ref('v3/regroup/'+ma).remove(); }catch(e){}
+  } else {
+    REGROUP[ma] = {group:groupId, by:info.name, at:new Date().toISOString()};
+    try{ await FBDB.ref('v3/regroup/'+ma).set(REGROUP[ma]); }catch(e){
+      console.error('Save regroup failed:', e);
+      alert('Lỗi lưu chuyển nhóm: '+e.message);
+    }
+  }
+  const p = DERIVED.pendA.find(x=>x.ma===ma);
+  if(p){
+    const g = grpById(groupId || classify(p.muc, p.dv).group);
+    p.group = g.id; p.sla = g.sla; p.ov = g.ov;
+    let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
+    else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+    p.st = st;
+    p.person = assignPerson(p);
+    if(REASSIGN[ma]) p.person = REASSIGN[ma].person;
+    showToast('✓ Đã chuyển '+ma+' → '+g.name, 2000);
   }
   renderDoc();
 }
