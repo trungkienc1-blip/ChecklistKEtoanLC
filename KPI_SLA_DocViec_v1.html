@@ -456,14 +456,16 @@ function detectRegion(muc, dv, creator, group){
 // Dò bảng "Quy tắc gán người" chung (áp dụng cho MỌI nhóm, kể cả Công tác phí)
 function matchAssignRules(rec){
   const cr = String(rec.creator||'').split('@')[0].trim().toLowerCase();
-  for(const r of CFG.assignRules){
-    if(r.group !== rec.group) continue;
-    if(r.region && r.region !== rec.region) continue;
-    try{ if(r.creatorPat && !new RegExp(r.creatorPat,'i').test(cr)) continue; }catch(e){ continue; }
-    try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) continue; }catch(e){ continue; }
-    try{ if(r.textPat && !new RegExp(r.textPat,'i').test(rec.muc)) continue; }catch(e){ continue; }
-    return r.person || null;
-  }
+  const check = r => {
+    if(r.group !== rec.group) return false;
+    if(r.region && r.region !== rec.region) return false;
+    try{ if(r.creatorPat && !new RegExp(r.creatorPat,'i').test(cr)) return false; }catch(e){ return false; }
+    try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) return false; }catch(e){ return false; }
+    try{ if(r.textPat && !new RegExp(r.textPat,'i').test(rec.muc)) return false; }catch(e){ return false; }
+    return true;
+  };
+  for(const r of CFG.assignRules) if(r.creatorPat && check(r)) return r.person || null;
+  for(const r of CFG.assignRules) if(!r.creatorPat && check(r)) return r.person || null;
   return null;
 }
 function assignPerson(rec){
