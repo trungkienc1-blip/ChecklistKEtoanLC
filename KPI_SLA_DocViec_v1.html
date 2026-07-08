@@ -280,7 +280,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 10,
+  cfgVer: 11,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -473,7 +473,11 @@ function assignPerson(rec){
     // 2) quy tắc CTP theo đơn vị (ctpDvRules) — CHỈ gán khi đã điền người;
     //    entry để trống người coi như chưa cấu hình → bỏ qua để rule chung (bước 3) được chạy tiếp
     for(const r of CFG.ctpDvRules){
-      try{ if(r.dvPat && r.person && new RegExp(r.dvPat,'i').test(rec.dv)) return r.person; }catch(e){}
+      try{
+        if(!r.dvPat || !r.person || !new RegExp(r.dvPat,'i').test(rec.dv)) continue;
+        if(/dao tao/i.test(r.dvPat) && /dao tao duoc mien Nam/i.test(rec.dv) && /th[uự]c t[aậ]p/i.test(rec.muc)) return 'Nhanntt';
+        return r.person;
+      }catch(e){}
     }
     // 3) quy tắc gán chung (cho phép rule tự thêm áp dụng cho CTP CHUNG)
     const byRule = matchAssignRules(rec);
