@@ -248,6 +248,7 @@ const DEFAULT_CFG = {
   },
   creatorPersonAll: {
     'duyenvtm7':'Thydu', 'nhungcth2':'Thydu', 'trunglt19':'Khangth', 'khuongn':'Khangth',
+    'nguyenpnt2':'Huongdb', 'yenvt20':'Huongdb',
   },
   staff: [
     {name:'Diepdt',   acc:'diepdt5',   team:'CP'}, {name:'Khangth',  acc:'khangth4',  team:'CP'},
@@ -303,8 +304,9 @@ function loadCfg(){
 function migrateCfg(){
   const old = CFG.cfgVer || 1;
   if(old >= DEFAULT_CFG.cfgVer) return;
-  // 1) creatorRegion: cập nhật nhãn vùng con mới (default ghi đè các key trùng, giữ key user thêm)
+  // 1) creatorRegion + creatorPersonAll: cập nhật (default ghi đè key trùng, giữ key user thêm)
   CFG.creatorRegion = {...CFG.creatorRegion, ...DEFAULT_CFG.creatorRegion};
+  CFG.creatorPersonAll = {...(CFG.creatorPersonAll||{}), ...DEFAULT_CFG.creatorPersonAll};
   // 2) groups: thêm nhóm mới nếu chưa có + cập nhật tên nhóm cũ
   const haveGroups = new Set(CFG.groups.map(g=>g.id));
   for(const g of DEFAULT_CFG.groups){
@@ -363,6 +365,7 @@ function getPrefix(t){
 function classify(muc, dv){
   const t = String(muc||''); const tl = t.toLowerCase();
   const dvs = String(dv||''); const dvl = dvs.toLowerCase();
+  if(/^(?:csvc|gsxd)\s*:/i.test(t)) return {group:'csvc', sub:null, excluded:false};
   const px = getPrefix(t);
   if(tl.includes('ctp_') || CTP_PREFIX.includes(px) || RX.ctp.test(tl) || /taskfore/.test(dvl)){
     if(/lệnh điều động|lenh dieu dong/i.test(tl)) return {group:'dieudong', sub:null, excluded:false};
