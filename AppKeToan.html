@@ -126,9 +126,11 @@ window.showTab = function(t){
   for(const b of document.querySelectorAll('.tab')) b.classList.toggle('act', b.dataset.tab===t);
   $('frame-checklist').classList.toggle('act', t==='checklist');
   $('frame-kpi').classList.toggle('act', t==='kpi');
-  // lazy load iframe khi mở lần đầu
-  if(t==='checklist' && !framesLoaded.checklist){ $('frame-checklist').src = CHECKLIST_SRC; framesLoaded.checklist=true; }
-  if(t==='kpi' && !framesLoaded.kpi){ $('frame-kpi').src = KPI_SRC; framesLoaded.kpi=true; }
+  // lazy load iframe khi mở lần đầu — thêm ?v=timestamp để luôn nạp bản HTML mới nhất
+  // (tránh trình duyệt dùng bản cache cũ trong khi config Firebase đã cập nhật).
+  const bust = '?v=' + Date.now();
+  if(t==='checklist' && !framesLoaded.checklist){ $('frame-checklist').src = CHECKLIST_SRC + bust; framesLoaded.checklist=true; }
+  if(t==='kpi' && !framesLoaded.kpi){ $('frame-kpi').src = KPI_SRC + bust; framesLoaded.kpi=true; }
 };
 
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
