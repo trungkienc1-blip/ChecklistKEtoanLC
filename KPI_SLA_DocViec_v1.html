@@ -286,7 +286,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 11,
+  cfgVer: 12,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -322,7 +322,13 @@ function migrateCfg(){
   const key = r => [r.group, r.region||'', r.dvPat||'', r.textPat||''].join('|');
   const have = new Set((CFG.assignRules||[]).map(key));
   for(const r of DEFAULT_CFG.assignRules) if(!have.has(key(r))) CFG.assignRules.push({...r});
-  // 4) cfgVer 9: cơ cấu KPI tổng hợp mới — bỏ c6 (quá hạn nặng), đặt lại trọng số
+  // 4) cfgVer 12: xóa rule catchall xaydung→Huongdb (giờ gán theo vùng, chỉ nguyenpnt2/yenvt20→Huongdb qua creatorPersonAll)
+  if(old < 12){
+    CFG.assignRules = (CFG.assignRules||[]).filter(r =>
+      !(r.group==='xaydung' && !r.region && !r.dvPat && !r.textPat)
+    );
+  }
+  // 5) cfgVer 9: cơ cấu KPI tổng hợp mới — bỏ c6 (quá hạn nặng), đặt lại trọng số
   //    c1=30, c2=30, c3=15, c4=15, c5=10 (auto=45%). Giữ chỉ tiêu người dùng tự thêm.
   if(old < 9){
     CFG.kpiCriteria = (CFG.kpiCriteria||[]).filter(c=>c.id!=='c6');
