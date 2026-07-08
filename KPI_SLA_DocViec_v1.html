@@ -140,10 +140,15 @@ const DEFAULT_CFG = {
     {id:'thuenha', name:'HC: Thuê nhà/kho',   sla:3,  ov:5},
     {id:'vaccine', name:'HC Vaccine (TTTC)',  sla:5,  ov:10},
     {id:'bo',      name:'Khối BO',            sla:5,  ov:10},
-    {id:'csvc',    name:'CSVC + Xây dựng',    sla:5,  ov:10},
+    {id:'kho',     name:'CP Kho',             sla:5,  ov:10},
+    {id:'ecom',    name:'CP Ecom (CTV)',      sla:5,  ov:10},
+    {id:'csvc',    name:'CSVC',               sla:5,  ov:10},
+    {id:'xaydung', name:'Xây dựng',           sla:5,  ov:10},
     {id:'ctp',     name:'Công tác phí',       sla:5,  ov:7},
+    {id:'dieudong',name:'Lệnh điều động',     sla:5,  ov:7},
     {id:'shop',    name:'CP Shop',            sla:5,  ov:7},
     {id:'gpp',     name:'PT Địa điểm (GPP)',  sla:3,  ov:5},
+    {id:'ptdd',    name:'PTDD',               sla:3,  ov:5},
     {id:'mkt',     name:'CP MKT',             sla:10, ov:15},
     {id:'khac',    name:'Khác (lead check)',  sla:5,  ov:7},
   ],
@@ -191,8 +196,18 @@ const DEFAULT_CFG = {
     {group:'mkt',     region:'',     dvPat:'', textPat:'^(FPR|TTTC)|phòng pr|truyền thông|CTP|Công tác|VX|Vacxin|TTTC', person:'Huytvt'},
     {group:'mkt',     region:'',     dvPat:'truyen thong', textPat:'', person:'Huytvt'},
     {group:'mkt',     region:'',     dvPat:'', textPat:'', person:'Huyentht'},
-    {group:'gpp',     region:'',     dvPat:'', textPat:'^PTDD', person:'Thydg'},
     {group:'gpp',     region:'',     dvPat:'', textPat:'', person:'Khangth'},
+    {group:'ptdd',    region:'',     dvPat:'', textPat:'', person:'Thydg'},
+    {group:'xaydung', region:'',     dvPat:'', textPat:'', person:'Huongdb'},
+    {group:'kho',     region:'',     dvPat:'Kho Tong Ha Noi', textPat:'', person:'China'},
+    {group:'kho',     region:'',     dvPat:'', textPat:'', person:'Thydu'},
+    {group:'ecom',    region:'',     dvPat:'', textPat:'', person:'Thydu'},
+    {group:'dieudong',region:'MB',   dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'dieudong',region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'dieudong',region:'MT',   dvPat:'', textPat:'', person:'Chilhk'},
+    {group:'dieudong',region:'MD',   dvPat:'', textPat:'', person:'Thydg'},
+    {group:'dieudong',region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
+    {group:'dieudong',region:'HCM',  dvPat:'', textPat:'', person:'Thydg'},
     {group:'bo',      region:'',     dvPat:'', textPat:'internet|cước|cuoc|NTLC', person:'Haoln11'},
     {group:'bo',      region:'',     dvPat:'', textPat:'hub.*(bắc|bac|hni)', person:'China'},
     {group:'bo',      region:'',     dvPat:'phong hanh chinh', textPat:'', person:'Haoln11'},
@@ -250,12 +265,11 @@ const DEFAULT_CFG = {
   b5Days: 3,
   warnPct: 70,
   kpiCriteria: [
-    {id:'c1', name:'Tỷ lệ hạch toán chính xác', ts:45, type:'manual', tv:98,  lower:false, unit:'%'},
-    {id:'c2', name:'SLA B3-B4 theo nhóm CP',    ts:15, type:'auto',   metric:'sla_rate',    tv:95,  lower:false, unit:'%'},
-    {id:'c3', name:'TB ngày so với SLA nhóm',   ts:5,  type:'auto',   metric:'avg_vs_sla',  tv:60,  lower:true,  unit:'%'},
-    {id:'c4', name:'Tuân thủ deadline báo cáo', ts:20, type:'manual', tv:100, lower:false, unit:'%'},
-    {id:'c5', name:'Tuân thủ phối hợp nội bộ',  ts:5,  type:'manual', tv:100, lower:false, unit:'%'},
-    {id:'c6', name:'Hồ sơ quá hạn nặng',        ts:10, type:'auto',   metric:'overdue_cnt', tv:0,   lower:true,  is_cnt:true, unit:'hs'},
+    {id:'c1', name:'Tỷ lệ hạch toán chính xác', ts:30, type:'manual', tv:98,  lower:false, unit:'%'},
+    {id:'c2', name:'SLA B3-B4 theo nhóm CP',    ts:30, type:'auto',   metric:'sla_rate',    tv:95,  lower:false, unit:'%'},
+    {id:'c3', name:'TB ngày so với SLA nhóm',   ts:15, type:'auto',   metric:'avg_vs_sla',  tv:60,  lower:true,  unit:'%'},
+    {id:'c4', name:'Tuân thủ deadline báo cáo', ts:15, type:'manual', tv:100, lower:false, unit:'%'},
+    {id:'c5', name:'Tuân thủ phối hợp nội bộ',  ts:10, type:'manual', tv:100, lower:false, unit:'%'},
     {id:'c7', name:'Sáng kiến được áp dụng',    ts:0,  type:'manual', tv:1,   lower:false, bonus:true, unit:'sk'},
   ],
   kpiCriteriaTT: [
@@ -265,7 +279,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
-  cfgVer: 5,
+  cfgVer: 9,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -290,10 +304,26 @@ function migrateCfg(){
   if(old >= DEFAULT_CFG.cfgVer) return;
   // 1) creatorRegion: cập nhật nhãn vùng con mới (default ghi đè các key trùng, giữ key user thêm)
   CFG.creatorRegion = {...CFG.creatorRegion, ...DEFAULT_CFG.creatorRegion};
-  // 2) assignRules: thêm các quy tắc mặc định còn thiếu (so khớp group+region+dvPat+textPat), không đụng rule đã có
+  // 2) groups: thêm nhóm mới nếu chưa có + cập nhật tên nhóm cũ
+  const haveGroups = new Set(CFG.groups.map(g=>g.id));
+  for(const g of DEFAULT_CFG.groups){
+    if(!haveGroups.has(g.id)) CFG.groups.push({...g});
+    else { const ex = CFG.groups.find(x=>x.id===g.id); if(ex) ex.name = g.name; }
+  }
+  // 3) assignRules: thêm các quy tắc mặc định còn thiếu (so khớp group+region+dvPat+textPat), không đụng rule đã có
   const key = r => [r.group, r.region||'', r.dvPat||'', r.textPat||''].join('|');
   const have = new Set((CFG.assignRules||[]).map(key));
   for(const r of DEFAULT_CFG.assignRules) if(!have.has(key(r))) CFG.assignRules.push({...r});
+  // 4) cfgVer 9: cơ cấu KPI tổng hợp mới — bỏ c6 (quá hạn nặng), đặt lại trọng số
+  //    c1=30, c2=30, c3=15, c4=15, c5=10 (auto=45%). Giữ chỉ tiêu người dùng tự thêm.
+  if(old < 9){
+    CFG.kpiCriteria = (CFG.kpiCriteria||[]).filter(c=>c.id!=='c6');
+    const nw = {c1:30, c2:30, c3:15, c4:15, c5:10};
+    for(const c of CFG.kpiCriteria){
+      if(nw[c.id]!==undefined) c.ts = nw[c.id];
+      if(c.id==='c3') c.metric = 'avg_vs_sla';
+    }
+  }
   CFG.cfgVer = DEFAULT_CFG.cfgVer;
   try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); }catch(e){}
 }
@@ -333,16 +363,29 @@ function classify(muc, dv){
   const t = String(muc||''); const tl = t.toLowerCase();
   const dvs = String(dv||''); const dvl = dvs.toLowerCase();
   const px = getPrefix(t);
-  if(tl.includes('ctp_') || CTP_PREFIX.includes(px) || RX.ctp.test(tl) || /taskfore/.test(dvl))
+  if(tl.includes('ctp_') || CTP_PREFIX.includes(px) || RX.ctp.test(tl) || /taskfore/.test(dvl)){
+    if(/lệnh điều động|lenh dieu dong/i.test(tl)) return {group:'dieudong', sub:null, excluded:false};
     return {group:'ctp', sub:ctpSub(t, tl, dvl), excluded:false};
+  }
   if(RX.dien.test(tl))    return {group:'dien', sub:null, excluded:false};
   if(RX.thuenha.test(tl)) return {group:'thuenha', sub:null, excluded:false};
   if(dvl.includes('vx hanh chinh')) return {group:'vaccine', sub:null, excluded:false};
   if(px==='FMK' || px==='FPR' || RX.mkt_dv.test(dvl)) return {group:'mkt', sub:null, excluded:false};
-  if(px==='PTDD' || dvl.includes('gpp') || dvl.includes('location') || RX.gpp.test(tl)) return {group:'gpp', sub:null, excluded:false};
-  if(px==='CSVC' || px==='GSXD' || RX.csvc_dv.test(dvl) || (RX.csvc_txt.test(tl) && RX.csvc_dv.test(dvl))) return {group:'csvc', sub:null, excluded:false};
+  if(px==='PTDD') return {group:'ptdd', sub:null, excluded:false};
+  if(dvl.includes('gpp') || dvl.includes('location') || RX.gpp.test(tl)) return {group:'gpp', sub:null, excluded:false};
+  if(px==='CSVC' || px==='GSXD' || RX.csvc_dv.test(dvl) || (RX.csvc_txt.test(tl) && RX.csvc_dv.test(dvl))){
+    if(px==='GSXD' || /xây dựng|xay dung|thi công|thi cong/i.test(tl) || (/xay dung/i.test(dvl) && !/csvc/i.test(dvl)))
+      return {group:'xaydung', sub:null, excluded:false};
+    return {group:'csvc', sub:null, excluded:false};
+  }
   if((/^(LC\d+|VX\d+)-/.test(t) || /(?:^|\.)(?:LC|VX)\s/.test(dvs) || RX.shop_num.test(tl) || RX.shop_kv.test(tl) || RX.shop_txt.test(tl)) && !RX.bo_dv.test(dvl)) return {group:'shop', sub:null, excluded:false};
-  if(BO_PREFIX.includes(px) || RX.bo_txt.test(tl) || RX.bo_dv.test(dvl)) return {group:'bo', sub:null, excluded:false};
+  if(BO_PREFIX.includes(px) || RX.bo_txt.test(tl) || RX.bo_dv.test(dvl)){
+    if(/kho tong|tong kho|phong kho/i.test(dvl))
+      return {group:'kho', sub:null, excluded:false};
+    if(/ctv|cộng tác viên|cong tac vien/i.test(tl) || /ecom|kinh doanh truc tuyen/i.test(dvl))
+      return {group:'ecom', sub:null, excluded:false};
+    return {group:'bo', sub:null, excluded:false};
+  }
   return {group:'khac', sub:null, excluded:false};
 }
 
@@ -598,6 +641,28 @@ function ingest(rows){
 }
 
 /* ════════════════ TÍNH TOÁN ════════════════ */
+function workingDays(start, end){
+  const WS=8.5, WE=18, WH=WE-WS;
+  function hh(d){ return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; }
+  function ymd(d){ return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
+  function fwd(d){ while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); return d; }
+  function bwd(d){ while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1); return d; }
+  let s = fwd(new Date(start));
+  let sh = hh(s);
+  if(sh<WS) s.setHours(8,30,0,0);
+  else if(sh>=WE){ s.setDate(s.getDate()+1); fwd(s); s.setHours(8,30,0,0); }
+  let e = bwd(new Date(end));
+  let eh = hh(e);
+  if(eh<WS){ e.setDate(e.getDate()-1); bwd(e); e.setHours(18,0,0,0); }
+  else if(eh>WE) e.setHours(18,0,0,0);
+  if(e<=s) return 0;
+  if(ymd(s)===ymd(e)) return Math.round((hh(e)-hh(s))/WH*10)/10;
+  let hours = WE - hh(s);
+  let cur = new Date(s); cur.setDate(cur.getDate()+1);
+  while(ymd(cur)<ymd(e)){ if(cur.getDay()!==0&&cur.getDay()!==6) hours+=WH; cur.setDate(cur.getDate()+1); }
+  hours += hh(e) - WS;
+  return Math.round(hours/WH*10)/10;
+}
 function grpById(id){ return CFG.groups.find(g=>g.id===id) || {name:id, sla:12, ov:18}; }
 function staffName(acc){
   const s = CFG.staff.find(x=>x.acc===acc);
@@ -607,7 +672,7 @@ function staffName(acc){
 }
 
 function recompute(){
-  const today = new Date(); today.setHours(0,0,0,0);
+  const today = new Date();
   const D = {pendA:[], pendB:[], done:[], doneTT:[], excludedRecv:0, total:STORE.size, months:new Set()};
   for(const rec of STORE.values()){
     const cls = classify(rec.muc, rec.dv);
@@ -626,14 +691,14 @@ function recompute(){
     if(erps.length && banks.length){
       const erpD = erps.reduce((a,b)=>a.date<b.date?a:b).date;
       const bank = banks.reduce((a,b)=>a.date<b.date?a:b);
-      const dTT = (bank.date - erpD)/864e5;
+      const dTT = workingDays(erpD, bank.date);
       if(dTT>=0 && dTT<=365){
         D.doneTT.push({acc:bank.acc, month:bank.date.toISOString().slice(0,7), days:dTT});
       }
     }
 
     if(mgrDate && !rcv){
-      const days = (today - new Date(mgrDate.getFullYear(),mgrDate.getMonth(),mgrDate.getDate()))/864e5;
+      const days = workingDays(mgrDate, today);
       let st;
       if(days > g.ov) st = 'bad'; else if(days > g.sla) st = 'late';
       else if(days >= g.sla*CFG.warnPct/100) st = 'warn'; else st = 'ok';
@@ -643,11 +708,11 @@ function recompute(){
       if(CFG.excludeRecv.includes(rcv.acc)){ D.excludedRecv++; continue; }
       const sorted = [...ap].sort((a,b)=>a.date-b.date);
       if(sorted.length && sorted[sorted.length-1].role==='RECEIVER'){
-        const days = (today - new Date(rcv.date.getFullYear(),rcv.date.getMonth(),rcv.date.getDate()))/864e5;
+        const days = workingDays(rcv.date, today);
         D.pendB.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, acc:rcv.acc, name:staffName(rcv.acc)||rcv.acc, late: days > CFG.b5Days});
       }
       if(mgrDate && rcv.date >= mgrDate){
-        const days = (rcv.date - mgrDate)/864e5;
+        const days = workingDays(mgrDate, rcv.date);
         if(days<=365){
           const month = rcv.date.toISOString().slice(0,7);
           D.months.add(month);
@@ -1022,23 +1087,41 @@ function critValue(crit, acc, quy, stats){
   return (v===undefined || v===null || v==='') ? null : v;
 }
 
-// Công thức điểm giữ nguyên KPI gốc
-function scoreCrit(crit, val){
+// Công thức điểm giữ nguyên KPI gốc. wOverride = trọng số hiệu dụng (khi chia lại
+// do có chỉ tiêu N/A); nếu không truyền thì dùng crit.ts.
+function scoreCrit(crit, val, wOverride){
   if(val===null || val===undefined || val==='' || isNaN(parseFloat(val))) return null;
   const v = parseFloat(val);
   if(crit.bonus) return {pct:null, score: v>=2?10:v>=1?5:0};
+  const w = (wOverride===undefined || wOverride===null) ? crit.ts : wOverride;
   let pct;
   if(crit.is_cnt)     pct = v===0 ? 100 : Math.max(0, 100 - v*3);
   else if(crit.lower) pct = v<=crit.tv ? 100 : Math.max(0, (crit.tv/v)*100);
   else                pct = Math.min(100, (v/crit.tv)*100);
-  return {pct: Math.round(pct*10)/10, score: Math.round(pct/100*crit.ts*10)/10};
+  return {pct: Math.round(pct*10)/10, score: Math.round(pct/100*w*10)/10};
+}
+
+// Trọng số hiệu dụng theo người: chỉ tiêu trong staff.naCrits (không áp dụng) bị loại
+// và trọng số của nó chia đều theo tỷ lệ cho các chỉ tiêu còn lại → tổng vẫn = 100.
+function effWeights(criteria, acc){
+  const staff = CFG.staff.find(x=>x.acc===acc);
+  const na = new Set((staff && staff.naCrits) || []);
+  const nonBonus = criteria.filter(c=>!c.bonus);
+  const total  = nonBonus.reduce((s,c)=>s+(parseFloat(c.ts)||0),0);
+  const sumApp = nonBonus.filter(c=>!na.has(c.id)).reduce((s,c)=>s+(parseFloat(c.ts)||0),0);
+  const factor = sumApp>0 ? total/sumApp : 1;
+  const w = {};
+  for(const c of nonBonus) w[c.id] = na.has(c.id) ? null : Math.round((parseFloat(c.ts)||0)*factor*10)/10;
+  return {w, na};
 }
 
 function tongTotals(acc, quy, months, criteria, stats){
+  const {w} = effWeights(criteria, acc);
   let total=0, bonus=0, hasAny=false;
   for(const crit of criteria){
+    if(!crit.bonus && w[crit.id]===null) continue; // chỉ tiêu N/A: loại khỏi điểm
     const val = critValue(crit, acc, quy, stats);
-    const r = scoreCrit(crit, val);
+    const r = scoreCrit(crit, val, crit.bonus?undefined:w[crit.id]);
     if(r===null) continue;
     hasAny = true;
     if(crit.bonus) bonus += r.score; else total += r.score;
@@ -1065,6 +1148,15 @@ function weightSum(criteria){
   return (criteria||CFG.kpiCriteria).filter(c=>!c.bonus).reduce((s,c)=>s+(parseFloat(c.ts)||0),0);
 }
 
+// Bật/tắt chỉ tiêu N/A cho 1 nhân viên (VD deadline báo cáo không áp dụng)
+function toggleNaCrit(i, critId, isNa){
+  const s = CFG.staff[i]; if(!s) return;
+  s.naCrits = s.naCrits || [];
+  if(isNa){ if(!s.naCrits.includes(critId)) s.naCrits.push(critId); }
+  else s.naCrits = s.naCrits.filter(x=>x!==critId);
+  saveCfg(); renderTong();
+}
+
 function buildTongTable(people, criteria, months, infoLabel, infoFn){
   const critTh = criteria.map(c=>
     `<th title="${esc(c.name)} · T.số ${c.bonus?'Bonus':c.ts+'%'} · Target ${c.lower?'≤':'≥'}${c.tv}${c.unit}">
@@ -1083,9 +1175,12 @@ function buildTongTable(people, criteria, months, infoLabel, infoFn){
     if(!isLead && hasAny) rank++;
     const g = grade(total);
     const info = infoFn ? infoFn(s) : (stats ? stats.count.toLocaleString('vi')+' hs' : 'chưa có hồ sơ');
+    const {w:effW, na:naSet} = effWeights(criteria, s.acc);
     const tds = criteria.map(crit=>{
+      if(!crit.bonus && effW[crit.id]===null)
+        return `<td class="num"><span class="mut">N/A</span><div class="small mut">không áp dụng</div></td>`;
       const val = critValue(crit, s.acc, tongQuy, stats);
-      const r = scoreCrit(crit, val);
+      const r = scoreCrit(crit, val, crit.bonus?undefined:effW[crit.id]);
       if(crit.type==='auto'){
         const disp = val===null ? '–' : (crit.is_cnt ? val : (Math.round(val*10)/10) + (crit.unit==='%'?'%':''));
         const col = r===null ? 'var(--ink-dim)' : (r.pct>=95?'var(--accent)':r.pct>=70?'var(--amber)':'var(--red)');
@@ -1101,7 +1196,7 @@ function buildTongTable(people, criteria, months, infoLabel, infoFn){
     return `<tr style="${isLead?'background:#eef2f4':''}">
       <td class="num mut">${isLead?'–':(hasAny?rank:'–')}</td>
       <td><b>${esc(s.name)}</b>${isLead?' <span class="small mut">(lead, không xếp hạng)</span>':''}
-        <div class="small mut">${esc(s.acc)} · ${info}</div></td>
+        <div class="small mut">${esc(s.acc)} · ${info}${naSet.size?` · <span style="color:var(--amber)">${naSet.size} chỉ tiêu N/A, chia lại trọng số</span>`:''}</div></td>
       ${tds}
       <td class="num" style="font-size:15px;font-weight:700;color:${hasAny?g.bg:'var(--ink-dim)'}">${hasAny?total.toFixed(1):'–'}</td>
       <td class="num" style="color:var(--violet);font-weight:700">${bonus>0?'+'+bonus.toFixed(1):''}</td>
@@ -1258,10 +1353,12 @@ async function exportTong(){
     });
     scored.sort((a,b)=>(a.isLead?1:0)-(b.isLead?1:0) || (b.total+b.bonus)-(a.total+a.bonus));
     for(const e of scored){
+      const {w:effW} = effWeights(criteria, e.s.acc);
       const row = [e.s.name, e.s.acc, isTT ? ttCount(e.s.acc, months) : (e.stats?e.stats.count:0)];
       for(const crit of criteria){
+        if(!crit.bonus && effW[crit.id]===null){ row.push('N/A'); row.push(''); continue; }
         const val = critValue(crit, e.s.acc, tongQuy, e.stats);
-        const r = scoreCrit(crit, val);
+        const r = scoreCrit(crit, val, crit.bonus?undefined:effW[crit.id]);
         row.push(val===null?'':val);
         row.push(r===null?'':r.score);
       }
@@ -1345,14 +1442,18 @@ function renderCfg(){
     <td><button class="rowbtn" onclick="delete CFG.creatorRegion['${esc(k)}'];saveCfg();recompute();renderCfg()">✕</button></td>
   </tr>`).join('');
 
-  const staffRows = CFG.staff.map((s,i)=>`<tr>
+  const staffRows = CFG.staff.map((s,i)=>{
+    const dc = s.team==='TT' ? 't3' : 'c4';               // chỉ tiêu deadline báo cáo theo team
+    const hasReport = !((s.naCrits||[]).includes(dc));
+    return `<tr>
     <td><input type="text" style="width:95px" value="${esc(s.name)}" onchange="CFG.staff[${i}].name=this.value.trim();saveCfg();recompute()"></td>
     <td><input type="text" style="width:110px" value="${esc(s.acc)}" onchange="CFG.staff[${i}].acc=this.value.trim().toLowerCase();saveCfg();recompute()"></td>
-    <td><select onchange="CFG.staff[${i}].team=this.value;saveCfg()">
+    <td><select onchange="CFG.staff[${i}].team=this.value;saveCfg();renderCfg()">
       <option value="CP" ${s.team!=='TT'?'selected':''}>CP</option>
       <option value="TT" ${s.team==='TT'?'selected':''}>TT</option></select></td>
+    <td class="num"><input type="checkbox" ${hasReport?'checked':''} title="Bỏ chọn nếu nhân viên KHÔNG có báo cáo định kỳ — chỉ tiêu deadline báo cáo sẽ N/A và trọng số chia lại cho các chỉ tiêu còn lại" onchange="toggleNaCrit(${i},'${dc}',!this.checked)"></td>
     <td><button class="rowbtn" onclick="CFG.staff.splice(${i},1);saveCfg();recompute();renderCfg()">✕</button></td>
-  </tr>`).join('');
+  </tr>`;}).join('');
 
   el.innerHTML = `
   <div class="cfg-grid">
@@ -1390,7 +1491,7 @@ function renderCfg(){
     </div>
     <div class="card">
       <div class="card-title">🧑‍💼 Nhân sự (receiver được tính KPI)</div>
-      <div class="tbl-scroll" style="max-height:260px"><table><thead><tr><th>Tên</th><th>Account</th><th>Team</th><th></th></tr></thead><tbody>${staffRows}</tbody></table></div>
+      <div class="tbl-scroll" style="max-height:260px"><table><thead><tr><th>Tên</th><th>Account</th><th>Team</th><th title="Có báo cáo định kỳ? Bỏ chọn → chỉ tiêu deadline báo cáo N/A, chia lại trọng số">BC định kỳ</th><th></th></tr></thead><tbody>${staffRows}</tbody></table></div>
       <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.staff.push({name:'',acc:'',team:'CP'});saveCfg();renderCfg()">+ Thêm nhân sự</button>
       <div class="small mut" style="margin-top:8px">Loại trừ (receiver team khác, cách nhau dấu phẩy):<br>
         <input type="text" style="width:100%" value="${esc(CFG.excludeRecv.join(', '))}" onchange="CFG.excludeRecv=this.value.split(',').map(x=>x.trim().toLowerCase()).filter(Boolean);saveCfg();recompute()"></div>
@@ -1402,7 +1503,7 @@ function renderCfg(){
     <div class="card-title">🏆 Bộ chỉ tiêu KPI tổng hợp — <span class="mut">trọng số, target tùy chỉnh; tổng trọng số (không tính Bonus) mỗi team phải = 100%</span></div>
     ${critEditorHtml('kpiCriteria','Team CP — chi phí','#2563eb')}
     ${critEditorHtml('kpiCriteriaTT','Team TT — thanh toán','var(--violet)')}
-    <div class="small mut" style="margin-top:8px">💡 Gợi ý: "Tỷ lệ hạch toán chính xác" đang chiếm 45% nhưng là ô nhập tay không có nguồn bằng chứng — nên cân nhắc hạ xuống ~30% và tăng trọng số phần AUTO để điểm phân hóa thực chất hơn. Metric <b>avg_vs_sla</b> = TB(ngày xử lý ÷ SLA nhóm của hồ sơ)×100 — công bằng giữa các nhóm chi phí, thay cho "TB ngày ≤3" cũ. Metric auto hiện tính từ dữ liệu B3-B4 (Team CP); chỉ tiêu Team TT nên để Nhập tay.</div>
+    <div class="small mut" style="margin-top:8px">💡 Cơ cấu hiện tại (Team CP): c1 hạch toán 30% · c2 SLA B3-B4 30% (auto) · c3 TB ngày vs SLA 15% (auto) · c4 deadline báo cáo 15% · c5 phối hợp 10% → phần AUTO chiếm <b>45%</b>. Metric <b>avg_vs_sla</b> = TB(ngày xử lý ÷ SLA nhóm của hồ sơ)×100 — công bằng giữa các nhóm chi phí. Nhân viên <b>không có báo cáo định kỳ</b>: bỏ chọn "BC định kỳ" ở bảng Nhân sự → chỉ tiêu deadline báo cáo tự thành N/A và trọng số chia lại cho các chỉ tiêu còn lại (tổng vẫn 100%). Metric auto tính từ dữ liệu B3-B4 (Team CP); chỉ tiêu Team TT nên để Nhập tay.</div>
   </div>
   <div class="card">
     <div class="filters">
