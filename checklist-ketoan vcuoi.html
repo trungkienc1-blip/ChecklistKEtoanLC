@@ -490,21 +490,33 @@ function renderWhoBar() {
 }
 
 // ── FIREBASE DATA LISTENER ────────────────────────────────
+// Listen ONLY on v3/months + v3/config (not the entire v3/ tree).
+// Before this fix, onValue(ref(db,'v3')) downloaded the ENTIRE v3/ subtree
+// (including v3/kpiData ~1-2MB, v3/kpiConfig, v3/reassign) on EVERY change
+// anywhere in v3/ — causing massive bandwidth waste.
 function startDataListener() {
-  onValue(ref(db,'v3'), async snap => {
-    FB = snap.val() || {};
-    applyTasks(FB.config && FB.config.tasks);
+  let gotMonths = false, gotConfig = false;
+  function initMonth() {
     if (!curMonth) {
-      const d = new Date();
-      const thisMonth = (d.getMonth()+1)+'/'+d.getFullYear();
-      const s = await get(ref(db,'v3/config/activeMonth'));
-      curMonth = (s.exists() ? s.val() : null) || thisMonth;
-      if (!(FB.months && FB.months[mkey(curMonth)])) {
-        set(ref(db,'v3/months/'+mkey(curMonth)), {label:curMonth,deadlines:{},tasks:{}});
-      }
+      curMonth = (FB.config && FB.config.activeMonth) || ((new Date().getMonth()+1)+'/'+new Date().getFullYear());
+    }
+    if (gotMonths && FB.months && !FB.months[mkey(curMonth)]) {
+      set(ref(db,'v3/months/'+mkey(curMonth)), {label:curMonth,deadlines:{},tasks:{}});
     }
     document.getElementById('lbl-month').textContent = 'Tháng '+curMonth;
+  }
+  onValue(ref(db,'v3/months'), snap => {
+    FB.months = snap.val() || {};
+    gotMonths = true;
+    initMonth();
     renderViewSel();
+    renderList();
+  });
+  onValue(ref(db,'v3/config'), snap => {
+    FB.config = snap.val() || {};
+    gotConfig = true;
+    applyTasks(FB.config.tasks);
+    initMonth();
     renderList();
   });
 }
