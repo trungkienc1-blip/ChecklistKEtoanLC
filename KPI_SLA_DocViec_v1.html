@@ -713,7 +713,7 @@ function workingDays(start, end){
   hours += hh(e) - WS;
   return Math.round(hours/WH*10)/10;
 }
-function grpById(id){ return CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
+function grpById(id){ return CFG.groups.find(g=>g.id===id) || DEFAULT_CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
 function staffName(acc){
   const s = CFG.staff.find(x=>x.acc===acc);
   if(s) return s.name;
