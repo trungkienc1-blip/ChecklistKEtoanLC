@@ -454,13 +454,15 @@ function assignPerson(rec){
   if(CFG.creatorPersonAll && CFG.creatorPersonAll[cr]) return CFG.creatorPersonAll[cr];
   if(rec.group==='thuenha' && CFG.creatorPerson && CFG.creatorPerson[cr]) return CFG.creatorPerson[cr];
   if(rec.group === 'ctp'){
-    // 0) quy tắc gán theo NỘI DUNG (assignRules nhóm ctp có textPat) — ưu tiên cao nhất,
-    //    vì nội dung cụ thể hơn nhóm con/đơn vị. VD hồ sơ "thực tập" của phòng đào tạo → Nhanntt
-    //    (không bị rule đơn vị "đào tạo → Thydu" ở ctpDvRules bắt trước).
+    // 0) quy tắc gán cụ thể theo CẢ đơn vị + nội dung (assignRules ctp có ĐỦ dvPat & textPat)
+    //    — ưu tiên trước nhóm con + ctpDvRules, vì "đơn vị + nội dung" cụ thể hơn "chỉ đơn vị".
+    //    VD "thực tập" ở phòng đào tạo dược miền Nam → Nhanntt (không bị ctpDvRule "đào tạo→Thydu"
+    //    bắt trước). Rule chỉ có textPat (VD ^ASM) KHÔNG được đưa lên đây — giữ ở bước 3 như cũ
+    //    để không lật ngược các gán đã ổn định.
     for(const r of CFG.assignRules){
-      if(r.group!=='ctp' || !r.textPat || !r.person) continue;
+      if(r.group!=='ctp' || !r.dvPat || !r.textPat || !r.person) continue;
       if(r.region && r.region !== rec.region) continue;
-      try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) continue; }catch(e){ continue; }
+      try{ if(!new RegExp(r.dvPat,'i').test(rec.dv)) continue; }catch(e){ continue; }
       try{ if(new RegExp(r.textPat,'i').test(rec.muc)) return r.person; }catch(e){}
     }
     // 1) nhóm con CTP có người phụ trách
