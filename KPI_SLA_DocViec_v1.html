@@ -596,7 +596,7 @@ async function restoreData(){
 }
 async function clearData(){
   if(!confirm('Xóa toàn bộ dữ liệu báo cáo đã lưu? (Cấu hình và điểm nhập tay vẫn giữ nguyên)')) return;
-  await idbDel('data');
+  await idbDel('data'); await idbDel('fbKpiData').catch(()=>{});
   STORE = new Map(); FILES = []; DERIVED = null; dataSavedAt = null;
   kpiMonths = null; kpiDrill = ''; tongQuy = null;
   renderFileBadges(); renderStatLine(); renderAll();
@@ -769,7 +769,7 @@ function recompute(){
         if(days<=365){
           const month = rcv.date.toISOString().slice(0,7);
           D.months.add(month);
-          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, tien:rec.tien, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
         }
       }
     }
@@ -1934,13 +1934,13 @@ async function exportDrill(acc){
   const rows = DERIVED.done.filter(d=>d.acc===acc && (kpiMonths?kpiMonths.has(d.month):true)).sort((a,b)=>b.days-a.days);
   const wb = await buildWb();
   const ws = wb.addWorksheet('Chi tiết '+(staffName(acc)||acc).slice(0,25));
-  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Đơn vị','Số tiền','Tháng B4','Số ngày B3-B4','SLA nhóm','Kết quả']);
+  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Số tiền','Tháng B4','Số ngày B3-B4','SLA nhóm','Kết quả']);
   for(const d of rows){
-    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc, d.dv, d.tien, d.month, Math.round(d.days*10)/10, d.sla, d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
+    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc, d.tien, d.month, Math.round(d.days*10)/10, d.sla, d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
     if(d.over) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
     else if(!d.ok) r.eachCell(c=>{c.fill=XLS_FILL.late;});
   }
-  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,32,13,10,12,9,13][i]||12; });
+  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,13,10,12,9,13][i]||12; });
   dlWb(wb, 'KPI_ChiTiet_'+(staffName(acc)||acc)+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 async function dlWb(wb, fname){
@@ -2075,9 +2075,22 @@ async function fbSaveCfg(){
 
 async function fbLoadData(){
   try{
-    const snap = await FBDB.ref('v3/kpiData').once('value');
-    if(!snap.exists()) return false;
-    const d = snap.val();
+    // Bước 1: chỉ tải timestamp (rất nhẹ ~30 byte) để biết dữ liệu có đổi không
+    let remoteTs = null;
+    try{ remoteTs = (await FBDB.ref('v3/kpiData/updatedAt').once('value')).val(); }catch(e){}
+    // Bước 2: nếu cache còn khớp timestamp → dùng cache, KHÔNG tải lại payload lớn
+    let d = null, fromCache = false;
+    if(remoteTs){
+      const cache = await idbGet('fbKpiData').catch(()=>null);
+      if(cache && cache.updatedAt === remoteTs && cache.data){ d = cache.data; fromCache = true; }
+    }
+    // Bước 3: cache lỗi thời (hoặc chưa có) → tải full & lưu cache
+    if(!d){
+      const snap = await FBDB.ref('v3/kpiData').once('value');
+      if(!snap.exists()) return false;
+      d = snap.val();
+      try{ await idbSet('fbKpiData', {updatedAt: d.updatedAt || null, data: d}); }catch(e){}
+    }
     DERIVED = {
       pendA: d.pendA || [],
       pendB: d.pendB || [],
@@ -2087,7 +2100,7 @@ async function fbLoadData(){
       total: d.stats?.total || 0,
       months: new Set(d.stats?.months || []),
     };
-    FILES = [{name:'Firebase (cập nhật '+(d.updatedAt?new Date(d.updatedAt).toLocaleString('vi-VN'):'?')+')', rows: DERIVED.total}];
+    FILES = [{name:'Firebase (cập nhật '+(d.updatedAt?new Date(d.updatedAt).toLocaleString('vi-VN'):'?')+(fromCache?' · từ cache':'')+')', rows: DERIVED.total}];
     dataSavedAt = d.updatedAt;
     renderFileBadges(); renderStatLine(); renderAll();
     return true;
