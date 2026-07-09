@@ -298,6 +298,7 @@ const DEFAULT_CFG = {
     {id:'t4', name:'Tuân thủ phối hợp nội bộ & audit',   ts:25, type:'manual', tv:100,  lower:false, unit:'%'},
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
+  kpiExclude: {},   // {acc: [groupId,...]} — nhóm loại khỏi % SLA của riêng người đó (vẫn đếm SL)
   cfgVer: 15,
 };
 
@@ -717,6 +718,17 @@ function workingDays(start, end){
   return Math.round(hours/WH*10)/10;
 }
 function grpById(id){ return CFG.groups.find(g=>g.id===id) || DEFAULT_CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
+function kpiExcluded(acc, gid){ return !!(CFG.kpiExclude && CFG.kpiExclude[acc] && CFG.kpiExclude[acc].includes(gid)); }
+function toggleKpiExclude(acc, gid){
+  if(typeof USER_ROLE==='undefined' || USER_ROLE!=='admin'){ alert('Chỉ admin mới chỉnh được.'); return; }
+  if(!CFG.kpiExclude) CFG.kpiExclude = {};
+  const list = CFG.kpiExclude[acc] || [];
+  const i = list.indexOf(gid);
+  if(i>=0) list.splice(i,1); else list.push(gid);
+  if(list.length) CFG.kpiExclude[acc] = list; else delete CFG.kpiExclude[acc];
+  saveCfg();
+  renderKpi();
+}
 function staffName(acc){
   const s = CFG.staff.find(x=>x.acc===acc);
   if(s) return s.name;
@@ -769,7 +781,7 @@ function recompute(){
         if(days<=365){
           const month = rcv.date.toISOString().slice(0,7);
           D.months.add(month);
-          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
         }
       }
     }
@@ -1016,19 +1028,21 @@ function renderKpi(){
   if(kpiMonths===null) kpiMonths = new Set(allMonths);
   const rows = DERIVED.done.filter(d=>kpiMonths.has(d.month));
 
-  // theo người
+  // theo người — nhóm bị loại (kpiExclude) vẫn đếm SL (n) nhưng KHÔNG tính vào % SLA (nSla/ok/over/days)
   const per = {};
   for(const d of rows){
-    (per[d.acc] = per[d.acc] || {n:0, ok:0, over:0, days:[], byGrp:{}});
+    (per[d.acc] = per[d.acc] || {n:0, nSla:0, ok:0, over:0, days:[], byGrp:{}, exclN:0});
     const p = per[d.acc];
-    p.n++; if(d.ok) p.ok++; if(d.over) p.over++;
-    p.days.push(d.days);
+    p.n++;
     (p.byGrp[d.group] = p.byGrp[d.group] || {n:0,ok:0});
     p.byGrp[d.group].n++; if(d.ok) p.byGrp[d.group].ok++;
+    if(kpiExcluded(d.acc, d.group)){ p.exclN++; continue; }
+    p.nSla++; if(d.ok) p.ok++; if(d.over) p.over++;
+    p.days.push(d.days);
   }
   const known = [], unknown = [], lead = [];
   for(const [acc,p] of Object.entries(per)){
-    const entry = {acc, ...p, rate: p.n?p.ok/p.n*100:0, med: pctile(p.days,.5)};
+    const entry = {acc, ...p, rate: p.nSla?p.ok/p.nSla*100:0, med: pctile(p.days,.5)};
     if(CFG.leadAcc.includes(acc)) lead.push(entry);
     else if(staffName(acc)) known.push(entry);
     else unknown.push(entry);
@@ -1042,10 +1056,11 @@ function renderKpi(){
     const col = e.rate>=80?'var(--accent)':e.rate>=60?'var(--amber)':'var(--red)';
     const grpMini = Object.entries(e.byGrp).sort((a,b)=>b[1].n-a[1].n).slice(0,3)
       .map(([g,v])=>`${esc(grpById(g).name.replace(/HC: |\(.*\)/g,'').trim())} ${(v.ok/v.n*100).toFixed(0)}%`).join(' · ');
+    const exclNote = e.exclN ? ` <span class="small mut" title="${e.exclN} hồ sơ thuộc nhóm được loại khỏi % SLA">(${e.nSla}/${e.n} tính SLA)</span>` : '';
     return `<tr style="cursor:pointer" onclick="kpiDrillTo('${e.acc}')">
       <td><b>${esc(nm)}</b>${badge||''}<div class="small mut">${esc(e.acc)}</div></td>
       <td class="num">${e.n.toLocaleString('vi')}</td>
-      <td class="num" style="color:${col};font-weight:700">${e.rate.toFixed(1)}%</td>
+      <td class="num" style="color:${col};font-weight:700">${e.rate.toFixed(1)}%${exclNote}</td>
       <td><div class="bar-out"><div class="bar-in" style="width:${Math.min(100,e.rate)}%;background:${col}"></div></div></td>
       <td class="num">${e.med!=null?e.med.toFixed(1):'–'}</td>
       <td class="num" style="color:${e.over?'var(--red)':'var(--ink-dim)'}">${e.over}</td>
@@ -1090,17 +1105,23 @@ function renderDrill(rows){
   // breakdown nhóm
   const byG = {};
   for(const d of mine){ (byG[d.group]=byG[d.group]||{n:0,ok:0,days:[]}); byG[d.group].n++; if(d.ok) byG[d.group].ok++; byG[d.group].days.push(d.days); }
+  const isAdmin = (typeof USER_ROLE!=='undefined' && USER_ROLE==='admin');
   const gRows = Object.entries(byG).sort((a,b)=>b[1].n-a[1].n).map(([g,v])=>{
     const gg = grpById(g); const r = v.ok/v.n*100;
-    const col = r>=80?'var(--accent)':r>=60?'var(--amber)':'var(--red)';
-    return `<tr><td>${esc(gg.name)}</td><td class="num">${v.n}</td><td class="num mut">${gg.sla} ngày</td>
+    const excl = kpiExcluded(kpiDrill, g);
+    const col = excl ? 'var(--ink-dim)' : (r>=80?'var(--accent)':r>=60?'var(--amber)':'var(--red)');
+    const toggle = isAdmin
+      ? `<button class="rowbtn" title="${excl?'Tính lại nhóm này vào KPI':'Loại nhóm này khỏi % SLA của '+esc(nm)}" onclick="event.stopPropagation();toggleKpiExclude('${esc(kpiDrill)}','${g}')">${excl?'➕ tính lại':'🚫 bỏ KPI'}</button>`
+      : (excl?'<span class="small mut">không tính KPI</span>':'');
+    return `<tr${excl?' style="opacity:.55"':''}><td>${esc(gg.name)}${excl?' <span class="small mut">(bỏ KPI)</span>':''}</td><td class="num">${v.n}</td><td class="num mut">${gg.sla} ngày</td>
       <td class="num" style="color:${col};font-weight:700">${r.toFixed(1)}%</td>
-      <td class="num">${pctile(v.days,.5).toFixed(1)}</td></tr>`;
+      <td class="num">${pctile(v.days,.5).toFixed(1)}</td>
+      <td>${toggle}</td></tr>`;
   }).join('');
   const dRows = mine.slice(0,400).map(d=>`<tr>
     <td class="mono">${esc(d.ma)}</td>
     <td><span class="grp-tag">${esc(grpById(d.group).name)}</span></td>
-    <td>${esc(String(d.muc).slice(0,80))}</td>
+    <td>${esc(String(d.muc||'').slice(0,80))}</td>
     <td class="num">${d.days.toFixed(1)}</td>
     <td class="num mut">${d.sla}</td>
     <td>${d.ok?'<span class="pill p-ok">Đạt</span>':d.over?'<span class="pill p-bad">Quá hạn nặng</span>':'<span class="pill p-late">Trễ</span>'}</td>
@@ -1112,7 +1133,7 @@ function renderDrill(rows){
       <button class="btn btn-ghost" onclick="kpiDrill='';renderKpi()">✕ Đóng</button></div>
     <div class="cfg-grid">
       <div><div class="card-title">Theo nhóm chi phí</div>
-        <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th></tr></thead><tbody>${gRows}</tbody></table></div>
+        <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th><th></th></tr></thead><tbody>${gRows}</tbody></table></div>
       <div><div class="card-title">Từng hồ sơ (chậm nhất trước${mine.length>400?', hiện 400 dòng đầu':''})</div>
         <div class="tbl-scroll" style="max-height:320px"><table>
         <thead><tr><th>Mã ĐN</th><th>Nhóm</th><th>Nội dung</th><th>Số ngày</th><th>SLA</th><th>KQ</th></tr></thead>
@@ -1142,6 +1163,7 @@ function currentUserAcc(){
 }
 
 // Gom done theo kỳ (tháng hoặc ngày) cho 1 người (acc='' = toàn team)
+// n = tất cả hồ sơ; ok/days chỉ tính hồ sơ KHÔNG bị loại khỏi KPI (kpiExclude theo người)
 function progAgg(acc, unit, monthSel){
   const out = {}; // key -> {n, ok, days[]}
   for(const dRec of DERIVED.done){
@@ -1150,11 +1172,13 @@ function progAgg(acc, unit, monthSel){
     if(unit==='month') key = dRec.month;
     else { if(!dRec.d || dRec.month!==monthSel) continue; key = dRec.d.slice(8,10); }
     (out[key] = out[key] || {n:0, ok:0, days:[]});
-    out[key].n++; if(dRec.ok) out[key].ok++; out[key].days.push(dRec.days);
+    out[key].n++;
+    if(!kpiExcluded(dRec.acc, dRec.group)){ if(dRec.ok) out[key].ok++; out[key].days.push(dRec.days); }
   }
   return out;
 }
-function progStatsOf(o){ return o ? {n:o.n, rate:o.n?o.ok/o.n*100:null, med:pctile(o.days,.5)} : {n:0, rate:null, med:null}; }
+// rate tính trên số hồ sơ được tính SLA (days.length), n vẫn là tổng SL
+function progStatsOf(o){ return o ? {n:o.n, rate:o.days.length?o.ok/o.days.length*100:null, med:pctile(o.days,.5)} : {n:0, rate:null, med:null}; }
 
 // Ngày lớn nhất có dữ liệu trong tháng m (dạng "YYYY-MM"); 0 nếu không có field ngày
 function progMaxDay(acc, m){
@@ -1173,7 +1197,8 @@ function progStatsFor(acc, m, maxDay){
     if(acc && d.acc!==acc) continue;
     if(d.month!==m) continue;
     if(maxDay>0){ if(!d.d) continue; if(+d.d.slice(8,10) > maxDay) continue; }
-    o.n++; if(d.ok) o.ok++; o.days.push(d.days);
+    o.n++;
+    if(!kpiExcluded(d.acc, d.group)){ if(d.ok) o.ok++; o.days.push(d.days); }
   }
   return progStatsOf(o.n?o:null);
 }
@@ -1934,13 +1959,14 @@ async function exportDrill(acc){
   const rows = DERIVED.done.filter(d=>d.acc===acc && (kpiMonths?kpiMonths.has(d.month):true)).sort((a,b)=>b.days-a.days);
   const wb = await buildWb();
   const ws = wb.addWorksheet('Chi tiết '+(staffName(acc)||acc).slice(0,25));
-  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Đơn vị','Số tiền','Tháng B4','Số ngày B3-B4','SLA nhóm','Kết quả']);
+  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Tháng B4','Số ngày B3-B4','SLA nhóm','Tính KPI','Kết quả']);
   for(const d of rows){
-    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc, d.dv, d.tien, d.month, Math.round(d.days*10)/10, d.sla, d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
+    const excl = kpiExcluded(acc, d.group);
+    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc||'', d.month, Math.round(d.days*10)/10, d.sla, excl?'Không':'Có', d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
     if(d.over) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
     else if(!d.ok) r.eachCell(c=>{c.fill=XLS_FILL.late;});
   }
-  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,32,13,10,12,9,13][i]||12; });
+  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,10,12,9,9,13][i]||12; });
   dlWb(wb, 'KPI_ChiTiet_'+(staffName(acc)||acc)+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 async function dlWb(wb, fname){
