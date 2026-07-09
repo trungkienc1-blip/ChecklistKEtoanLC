@@ -1156,6 +1156,28 @@ function progAgg(acc, unit, monthSel){
 }
 function progStatsOf(o){ return o ? {n:o.n, rate:o.n?o.ok/o.n*100:null, med:pctile(o.days,.5)} : {n:0, rate:null, med:null}; }
 
+// Ngày lớn nhất có dữ liệu trong tháng m (dạng "YYYY-MM"); 0 nếu không có field ngày
+function progMaxDay(acc, m){
+  let mx = 0;
+  for(const d of DERIVED.done){
+    if(acc && d.acc!==acc) continue;
+    if(d.month!==m || !d.d) continue;
+    const dd = +d.d.slice(8,10); if(dd>mx) mx = dd;
+  }
+  return mx;
+}
+// Thống kê 1 người (acc='' = team) trong tháng m; nếu maxDay>0 chỉ tính hồ sơ ngày <= maxDay (so cùng kỳ)
+function progStatsFor(acc, m, maxDay){
+  const o = {n:0, ok:0, days:[]};
+  for(const d of DERIVED.done){
+    if(acc && d.acc!==acc) continue;
+    if(d.month!==m) continue;
+    if(maxDay>0){ if(!d.d) continue; if(+d.d.slice(8,10) > maxDay) continue; }
+    o.n++; if(d.ok) o.ok++; o.days.push(d.days);
+  }
+  return progStatsOf(o.n?o:null);
+}
+
 function renderProgress(){
   const el = document.getElementById('tab-prog');
   if(!DERIVED || !DERIVED.done.length){ el.innerHTML = '<div class="empty">Chưa có dữ liệu hồ sơ đã xử lý.</div>'; return; }
@@ -1188,31 +1210,33 @@ function renderProgress(){
   if(isTeam) progTeamCharts(allMonths); else progPersonCharts(progAcc, allMonths, curM, prevM);
 }
 
-function progDelta(cur, prev, goodUp, unitTxt){
+function progDelta(cur, prev, goodUp, unitTxt, cmpLbl){
   if(cur==null || prev==null) return '<span class="small mut">–</span>';
   const d = cur - prev;
-  if(Math.abs(d) < 0.05) return '<span class="small mut">= không đổi</span>';
+  if(Math.abs(d) < 0.05) return `<span class="small mut">= không đổi ${cmpLbl||'so kỳ trước'}</span>`;
   const good = goodUp ? d>0 : d<0;
   const col = good ? 'var(--accent)' : 'var(--red)';
-  return `<span class="small" style="color:${col};font-weight:700">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)}${unitTxt} so kỳ trước</span>`;
+  return `<span class="small" style="color:${col};font-weight:700">${d>0?'▲':'▼'} ${Math.abs(d).toFixed(1)}${unitTxt} ${cmpLbl||'so kỳ trước'}</span>`;
 }
 
 function progPersonHtml(acc, allMonths, curM, prevM){
   const nm = staffName(acc) || acc;
-  const byM = progAgg(acc, 'month');
-  const cur = progStatsOf(byM[curM]), prev = progStatsOf(prevM?byM[prevM]:null);
+  const cutoff = progMaxDay(acc, curM);   // >0 nếu tháng hiện tại còn dở dang & có field ngày
+  const cur = progStatsFor(acc, curM, 0);
+  const prev = prevM ? progStatsFor(acc, prevM, cutoff) : {n:0,rate:null,med:null};
+  const cmp = cutoff>0 ? `so cùng kỳ (đến ngày ${cutoff}) tháng trước` : 'so kỳ trước';
   const pend = DERIVED.pendA.filter(p=>p.person===nm);
   const pLate = pend.filter(p=>p.st==='late'||p.st==='bad').length;
   const cards = `<div class="cards-row" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px">
     <div class="card"><div class="small mut">HỒ SƠ XỬ LÝ · ${curM}</div>
       <div style="font-family:Georgia,serif;font-size:28px;font-weight:700">${cur.n.toLocaleString('vi')}</div>
-      ${progDelta(cur.n, prev.n, true, ' hs')}</div>
+      ${progDelta(cur.n, prev.n, true, ' hs', cmp)}</div>
     <div class="card"><div class="small mut">% ĐẠT SLA · ${curM}</div>
       <div style="font-family:Georgia,serif;font-size:28px;font-weight:700;color:${cur.rate>=80?'var(--accent)':cur.rate>=60?'var(--amber)':'var(--red)'}">${cur.rate!=null?cur.rate.toFixed(1)+'%':'–'}</div>
-      ${progDelta(cur.rate, prev.rate, true, '%')}</div>
+      ${progDelta(cur.rate, prev.rate, true, '%', cmp)}</div>
     <div class="card"><div class="small mut">MEDIAN NGÀY XỬ LÝ · ${curM}</div>
       <div style="font-family:Georgia,serif;font-size:28px;font-weight:700">${cur.med!=null?cur.med.toFixed(1):'–'}</div>
-      ${progDelta(cur.med, prev.med, false, ' ngày')}</div>
+      ${progDelta(cur.med, prev.med, false, ' ngày', cmp)}</div>
     <div class="card"><div class="small mut">ĐANG CHỜ XỬ LÝ</div>
       <div style="font-family:Georgia,serif;font-size:28px;font-weight:700">${pend.length}</div>
       <span class="small" style="color:${pLate?'var(--red)':'var(--accent)'}">${pLate?pLate+' hồ sơ trễ/quá hạn':'không có hồ sơ trễ'}</span></div>
@@ -1304,30 +1328,27 @@ function progPersonCharts(acc, allMonths, curM, prevM){
 
 function progTeamHtml(allMonths, curM, prevM){
   const meAcc = currentUserAcc();
-  const per = {};
-  for(const d of DERIVED.done){
-    if(!staffName(d.acc) || CFG.leadAcc.includes(d.acc)) continue;
-    (per[d.acc] = per[d.acc] || {});
-    (per[d.acc][d.month] = per[d.acc][d.month] || {n:0,ok:0,days:[]});
-    const o = per[d.acc][d.month]; o.n++; if(d.ok) o.ok++; o.days.push(d.days);
-  }
-  const rows = Object.entries(per).map(([acc,ms])=>{
-    const c = progStatsOf(ms[curM]), p = progStatsOf(prevM?ms[prevM]:null);
+  const cutoff = progMaxDay('', curM);   // cùng kỳ toàn team
+  const accs = [...new Set(DERIVED.done.filter(d=>staffName(d.acc) && !CFG.leadAcc.includes(d.acc)).map(d=>d.acc))];
+  const rows = accs.map(acc=>{
+    const c = progStatsFor(acc, curM, 0);
+    const p = prevM ? progStatsFor(acc, prevM, cutoff) : {n:0,rate:null,med:null};
     return {acc, nm:staffName(acc)||acc, c, p};
   }).filter(r=>r.c.n||r.p.n).sort((a,b)=>(b.c.rate??-1)-(a.c.rate??-1));
+  const cmp = cutoff>0 ? `so cùng kỳ (đến ngày ${cutoff})` : 'so kỳ trước';
   const trs = rows.map(r=>{
     const col = r.c.rate>=80?'var(--accent)':r.c.rate>=60?'var(--amber)':'var(--red)';
     const hl = r.acc===meAcc ? ' style="background:var(--accent-soft)"' : '';
     return `<tr${hl}><td><b>${esc(r.nm)}</b>${r.acc===meAcc?' <span class="small mut">(bạn)</span>':''}</td>
       <td class="num">${r.c.n.toLocaleString('vi')}</td>
       <td class="num" style="color:${col};font-weight:700">${r.c.rate!=null?r.c.rate.toFixed(1)+'%':'–'}</td>
-      <td>${progDelta(r.c.rate, r.p.rate, true, '%')}</td>
+      <td>${progDelta(r.c.rate, r.p.rate, true, '%', cmp)}</td>
       <td class="num">${r.c.med!=null?r.c.med.toFixed(1):'–'}</td></tr>`;
   }).join('');
   return `
     <div class="card"><div class="card-title">🏅 Xếp hạng % SLA tháng ${curM}</div>
       <div class="tbl-scroll"><table>
-        <thead><tr><th>Nhân viên</th><th>SL hồ sơ</th><th>% đạt SLA</th><th>So tháng trước</th><th>Median ngày</th></tr></thead>
+        <thead><tr><th>Nhân viên</th><th>SL hồ sơ</th><th>% đạt SLA</th><th>Δ ${cutoff>0?'cùng kỳ':'tháng trước'}</th><th>Median ngày</th></tr></thead>
         <tbody>${trs}</tbody></table></div></div>
     <div class="card"><div class="card-title">📈 Xu hướng toàn team theo tháng</div>
       <div style="height:280px"><canvas id="progTeamTrend"></canvas></div></div>`;
