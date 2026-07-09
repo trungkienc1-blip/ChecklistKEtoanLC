@@ -769,7 +769,7 @@ function recompute(){
         if(days<=365){
           const month = rcv.date.toISOString().slice(0,7);
           D.months.add(month);
-          D.done.push({ma:rec.ma, group:rec.group, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
         }
       }
     }
@@ -1097,14 +1097,27 @@ function renderDrill(rows){
       <td class="num" style="color:${col};font-weight:700">${r.toFixed(1)}%</td>
       <td class="num">${pctile(v.days,.5).toFixed(1)}</td></tr>`;
   }).join('');
+  const dRows = mine.slice(0,400).map(d=>`<tr>
+    <td class="mono">${esc(d.ma)}</td>
+    <td><span class="grp-tag">${esc(grpById(d.group).name)}</span></td>
+    <td>${esc(String(d.muc).slice(0,80))}</td>
+    <td class="num">${d.days.toFixed(1)}</td>
+    <td class="num mut">${d.sla}</td>
+    <td>${d.ok?'<span class="pill p-ok">Đạt</span>':d.over?'<span class="pill p-bad">Quá hạn nặng</span>':'<span class="pill p-late">Trễ</span>'}</td>
+  </tr>`).join('');
   box.innerHTML = `<div class="drill">
     <div class="filters"><b style="font-size:14px">🔍 Chi tiết: ${esc(nm)} — ${mine.length.toLocaleString('vi')} hồ sơ</b>
       <span style="flex:1"></span>
+      <button class="btn btn-success" onclick="exportDrill('${esc(kpiDrill)}')">⬇ Xuất Excel người này</button>
       <button class="btn btn-ghost" onclick="kpiDrill='';renderKpi()">✕ Đóng</button></div>
-    <div><div class="card-title">Theo nhóm chi phí</div>
-      <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th></tr></thead><tbody>${gRows}</tbody></table></div>
-    <div class="small mut" style="margin-top:8px">Chi tiết từng hồ sơ xem ở tab <b>📋 Theo dõi công việc</b>.</div>
-  </div>`;
+    <div class="cfg-grid">
+      <div><div class="card-title">Theo nhóm chi phí</div>
+        <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th></tr></thead><tbody>${gRows}</tbody></table></div>
+      <div><div class="card-title">Từng hồ sơ (chậm nhất trước${mine.length>400?', hiện 400 dòng đầu':''})</div>
+        <div class="tbl-scroll" style="max-height:320px"><table>
+        <thead><tr><th>Mã ĐN</th><th>Nhóm</th><th>Nội dung</th><th>Số ngày</th><th>SLA</th><th>KQ</th></tr></thead>
+        <tbody>${dRows}</tbody></table></div></div>
+    </div></div>`;
 }
 
 /* ════════════════ TAB TIẾN ĐỘ ════════════════ */
@@ -1915,6 +1928,20 @@ async function exportKpi(){
   }
   ws.columns.forEach((col,i)=>{ col.width=[16,14,10,12,9,12,12,16][i]||12; });
   dlWb(wb, 'KPI_SLA_'+new Date().toISOString().slice(0,10)+'.xlsx');
+}
+async function exportDrill(acc){
+  if(!DERIVED) return;
+  const rows = DERIVED.done.filter(d=>d.acc===acc && (kpiMonths?kpiMonths.has(d.month):true)).sort((a,b)=>b.days-a.days);
+  const wb = await buildWb();
+  const ws = wb.addWorksheet('Chi tiết '+(staffName(acc)||acc).slice(0,25));
+  xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Đơn vị','Số tiền','Tháng B4','Số ngày B3-B4','SLA nhóm','Kết quả']);
+  for(const d of rows){
+    const r = ws.addRow([d.ma, grpById(d.group).name, d.muc, d.dv, d.tien, d.month, Math.round(d.days*10)/10, d.sla, d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
+    if(d.over) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
+    else if(!d.ok) r.eachCell(c=>{c.fill=XLS_FILL.late;});
+  }
+  ws.columns.forEach((col,i)=>{ col.width=[12,18,50,32,13,10,12,9,13][i]||12; });
+  dlWb(wb, 'KPI_ChiTiet_'+(staffName(acc)||acc)+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 async function dlWb(wb, fname){
   const buf = await wb.xlsx.writeBuffer();
