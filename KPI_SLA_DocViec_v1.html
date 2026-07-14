@@ -1050,6 +1050,9 @@ function renderKpi(){
   known.sort((a,b)=>b.rate-a.rate); unknown.sort((a,b)=>b.n-a.n);
 
   const mChips = allMonths.map(m=>`<span class="chip ${kpiMonths.has(m)?'on':''}" onclick="kpiToggleMonth('${m}')">${m}</span>`).join('');
+  // Chip theo quý — chỉ hiện quý có dữ liệu
+  const availQ = ['Q1','Q2','Q3','Q4'].filter(q=>Q_MONTHS_2026[q].some(m=>DERIVED.months.has(m)));
+  const qChips = availQ.map(q=>`<span class="chip" onclick="kpiSelectQuarter('${q}')" title="Chọn các tháng thuộc ${q}/2026">${q}</span>`).join('');
 
   function personRow(e, badge){
     const nm = staffName(e.acc) || e.acc;
@@ -1072,11 +1075,14 @@ function renderKpi(){
     <div class="card">
       <div class="filters">
         <b style="font-size:13px">Tháng duyệt B4:</b>${mChips}
+        ${qChips?`<span style="width:1px;height:16px;background:var(--line,#d5dbe0);margin:0 2px;align-self:center"></span>${qChips}`:''}
         <span class="chip" onclick="kpiMonths=new Set(${JSON.stringify(allMonths).replace(/"/g,'&quot;')});renderKpi()">Tất cả</span>
+        <span class="chip" onclick="kpiClearMonths()" title="Bỏ chọn tất cả tháng">Bỏ chọn</span>
         <span style="flex:1"></span>
         <button class="btn btn-success" onclick="exportKpi()">⬇ Xuất Excel</button>
       </div>
       <div class="small mut" style="margin-bottom:8px">Mỗi hồ sơ được chấm đạt/trễ theo SLA của <b>nhóm chi phí của chính nó</b> — người ôm nhóm khó không bị thiệt. Bấm vào từng người để xem chi tiết hồ sơ.</div>
+      ${kpiMonths.size===0?'<div class="banner">Chưa chọn tháng nào — bấm một tháng, một quý, hoặc <b>Tất cả</b> để xem dữ liệu.</div>':''}
       <div class="tbl-scroll"><table>
         <thead><tr><th>Nhân viên</th><th>SL hồ sơ</th><th>% đạt SLA nhóm</th><th></th><th>Median ngày</th><th>Quá hạn nặng</th><th>Nhóm chính (% đạt)</th></tr></thead>
         <tbody>
@@ -1093,9 +1099,15 @@ function renderKpi(){
   if(kpiDrill) renderDrill(rows);
 }
 function kpiToggleMonth(m){
-  if(kpiMonths.has(m) && kpiMonths.size>1) kpiMonths.delete(m); else kpiMonths.add(m);
+  if(kpiMonths.has(m)) kpiMonths.delete(m); else kpiMonths.add(m);
   renderKpi();
 }
+function kpiSelectQuarter(q){
+  const qm = Q_MONTHS_2026[q]||[];
+  kpiMonths = new Set([...DERIVED.months].filter(m=>qm.includes(m)));
+  renderKpi();
+}
+function kpiClearMonths(){ kpiMonths = new Set(); renderKpi(); }
 function kpiDrillTo(acc){ kpiDrill = acc; renderKpi(); document.getElementById('kpiDrillBox')?.scrollIntoView({behavior:'smooth'}); }
 function renderDrill(rows){
   const box = document.getElementById('kpiDrillBox');
@@ -1422,17 +1434,22 @@ function tongAutoStats(acc, months){
   const rows = DERIVED.done.filter(d=>d.acc===acc && months.includes(d.month));
   if(!rows.length) return null;
   const n = rows.length;
-  const ok = rows.filter(d=>d.ok).length;
-  const over = rows.filter(d=>d.over).length;
-  const daysSum = rows.reduce((s,d)=>s+d.days,0);
-  const ratioSum = rows.reduce((s,d)=>s+(d.sla>0 ? d.days/d.sla : 0),0);
+  // Nhóm bị loại khỏi KPI (kpiExclude theo người, VD hỗ trợ nhóm khác): vẫn đếm SL
+  // nhưng KHÔNG tính vào các metric SLA — đồng bộ với cách tab KPI SLA đang tính.
+  const slaRows = rows.filter(d=>!kpiExcluded(d.acc, d.group));
+  const nSla = slaRows.length;
+  const ok = slaRows.filter(d=>d.ok).length;
+  const over = slaRows.filter(d=>d.over).length;
+  const daysSum = slaRows.reduce((s,d)=>s+d.days,0);
+  const ratioSum = slaRows.reduce((s,d)=>s+(d.sla>0 ? d.days/d.sla : 0),0);
   return {
-    count: n,
-    sla_rate:    Math.round(ok/n*1000)/10,
-    avg_days:    Math.round(daysSum/n*100)/100,
-    avg_vs_sla:  Math.round(ratioSum/n*1000)/10,   // % so với SLA nhóm: 100 = vừa khớp SLA
+    count: n,          // SL hồ sơ = tất cả (gồm cả nhóm hỗ trợ)
+    exclN: n - nSla,   // số hồ sơ bị loại khỏi % SLA
+    sla_rate:    nSla ? Math.round(ok/nSla*1000)/10 : null,
+    avg_days:    nSla ? Math.round(daysSum/nSla*100)/100 : null,
+    avg_vs_sla:  nSla ? Math.round(ratioSum/nSla*1000)/10 : null,   // % so với SLA nhóm: 100 = vừa khớp SLA
     overdue_cnt: over,
-    overdue_pct: Math.round((n-ok)/n*1000)/10,
+    overdue_pct: nSla ? Math.round((nSla-ok)/nSla*1000)/10 : null,
   };
 }
 
@@ -1529,7 +1546,7 @@ function buildTongTable(people, criteria, months, infoLabel, infoFn){
     const {s, total, bonus, hasAny, stats, isLead} = e;
     if(!isLead && hasAny) rank++;
     const g = grade(total);
-    const info = infoFn ? infoFn(s) : (stats ? stats.count.toLocaleString('vi')+' hs' : 'chưa có hồ sơ');
+    const info = infoFn ? infoFn(s) : (stats ? stats.count.toLocaleString('vi')+' hs'+(stats.exclN?` · <span style="color:var(--violet)" title="${stats.exclN} hồ sơ hỗ trợ nhóm khác — được loại khỏi % SLA của người này">🤝 ${stats.exclN} hỗ trợ</span>`:'') : 'chưa có hồ sơ');
     const {w:effW, na:naSet} = effWeights(criteria, s.acc);
     const tds = criteria.map(crit=>{
       if(!crit.bonus && effW[crit.id]===null)
