@@ -299,7 +299,7 @@ const DEFAULT_CFG = {
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
   kpiExclude: {},   // {acc: [groupId,...]} — nhóm loại khỏi % SLA của riêng người đó (vẫn đếm SL)
-  cfgVer: 15,
+  cfgVer: 16,
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -353,6 +353,17 @@ function migrateCfg(){
     for(const c of CFG.kpiCriteria){
       if(nw[c.id]!==undefined) c.ts = nw[c.id];
       if(c.id==='c3') c.metric = 'avg_vs_sla';
+    }
+  }
+  // 6) cfgVer 16: kpiExclude chuyển từ {acc:[gid]} (loại toàn thời gian) sang
+  //    {acc:{gid:'all'|['YYYY-MM'...]}} (loại theo từng tháng). Dữ liệu cũ giữ nghĩa 'all'.
+  if(old < 16 && CFG.kpiExclude){
+    for(const acc of Object.keys(CFG.kpiExclude)){
+      const v = CFG.kpiExclude[acc];
+      if(Array.isArray(v)){
+        const obj = {}; for(const gid of v) obj[gid] = 'all';
+        CFG.kpiExclude[acc] = obj;
+      }
     }
   }
   CFG.cfgVer = DEFAULT_CFG.cfgVer;
@@ -718,14 +729,45 @@ function workingDays(start, end){
   return Math.round(hours/WH*10)/10;
 }
 function grpById(id){ return CFG.groups.find(g=>g.id===id) || DEFAULT_CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
-function kpiExcluded(acc, gid){ return !!(CFG.kpiExclude && CFG.kpiExclude[acc] && CFG.kpiExclude[acc].includes(gid)); }
+// kpiExclude: {acc: {gid: ['YYYY-MM',...] | 'all'}} — loại nhóm khỏi %SLA THEO TỪNG THÁNG.
+// 'all' = tương thích dữ liệu cũ (loại toàn thời gian). Không truyền month = "có bị loại tháng nào không".
+function exclMonths(acc, gid){
+  const e = CFG.kpiExclude && CFG.kpiExclude[acc] && CFG.kpiExclude[acc][gid];
+  if(e === 'all') return 'all';
+  return Array.isArray(e) ? e : null;
+}
+function kpiExcluded(acc, gid, month){
+  const e = exclMonths(acc, gid);
+  if(!e) return false;
+  if(e === 'all') return true;
+  return month ? e.includes(month) : e.length>0;
+}
+// Đang xem các tháng `sel` — nhóm này bị loại ở mức nào: 'none' | 'all' | 'some'
+function excludeStateFor(acc, gid, sel){
+  const e = exclMonths(acc, gid);
+  if(!e) return 'none';
+  if(e === 'all') return 'all';
+  if(!sel || !sel.length) return e.length? 'some' : 'none';
+  const hit = sel.filter(m=>e.includes(m)).length;
+  return hit===0 ? 'none' : (hit===sel.length ? 'all' : 'some');
+}
+// Bật/tắt loại KPI cho nhóm gid của acc — CHỈ tác động các tháng đang chọn (kpiMonths).
 function toggleKpiExclude(acc, gid){
   if(typeof USER_ROLE==='undefined' || USER_ROLE!=='admin'){ alert('Chỉ admin mới chỉnh được.'); return; }
+  const sel = [...(kpiMonths||[])];
+  if(!sel.length){ alert('Hãy chọn ít nhất 1 tháng ở bộ lọc phía trên rồi mới bỏ/khôi phục KPI — việc loại chỉ áp dụng cho các tháng đang chọn.'); return; }
   if(!CFG.kpiExclude) CFG.kpiExclude = {};
-  const list = CFG.kpiExclude[acc] || [];
-  const i = list.indexOf(gid);
-  if(i>=0) list.splice(i,1); else list.push(gid);
-  if(list.length) CFG.kpiExclude[acc] = list; else delete CFG.kpiExclude[acc];
+  if(!CFG.kpiExclude[acc]) CFG.kpiExclude[acc] = {};
+  let cur = CFG.kpiExclude[acc][gid];
+  if(cur === 'all') cur = [...(DERIVED?DERIVED.months:[])];   // chuẩn hoá 'all' -> danh sách tháng cụ thể
+  if(!Array.isArray(cur)) cur = [];
+  const set = new Set(cur);
+  const allSelExcluded = sel.every(m=>set.has(m));
+  if(allSelExcluded){ for(const m of sel) set.delete(m); }    // đang loại hết tháng chọn -> khôi phục
+  else { for(const m of sel) set.add(m); }                    // -> loại các tháng chọn
+  const arr = [...set].sort();
+  if(arr.length) CFG.kpiExclude[acc][gid] = arr; else delete CFG.kpiExclude[acc][gid];
+  if(!Object.keys(CFG.kpiExclude[acc]).length) delete CFG.kpiExclude[acc];
   saveCfg();
   renderKpi();
 }
@@ -1036,7 +1078,7 @@ function renderKpi(){
     p.n++;
     (p.byGrp[d.group] = p.byGrp[d.group] || {n:0,ok:0});
     p.byGrp[d.group].n++; if(d.ok) p.byGrp[d.group].ok++;
-    if(kpiExcluded(d.acc, d.group)){ p.exclN++; continue; }
+    if(kpiExcluded(d.acc, d.group, d.month)){ p.exclN++; continue; }
     p.nSla++; if(d.ok) p.ok++; if(d.over) p.over++;
     p.days.push(d.days);
   }
@@ -1118,14 +1160,21 @@ function renderDrill(rows){
   const byG = {};
   for(const d of mine){ (byG[d.group]=byG[d.group]||{n:0,ok:0,days:[]}); byG[d.group].n++; if(d.ok) byG[d.group].ok++; byG[d.group].days.push(d.days); }
   const isAdmin = (typeof USER_ROLE!=='undefined' && USER_ROLE==='admin');
+  const sel = [...(kpiMonths||[])];
+  const selLbl = sel.length ? (sel.length===1 ? 'tháng '+sel[0] : sel.length+' tháng đang chọn') : 'tháng đang chọn';
   const gRows = Object.entries(byG).sort((a,b)=>b[1].n-a[1].n).map(([g,v])=>{
     const gg = grpById(g); const r = v.ok/v.n*100;
-    const excl = kpiExcluded(kpiDrill, g);
+    const state = excludeStateFor(kpiDrill, g, sel);   // 'none' | 'all' | 'some'
+    const excl = state!=='none';
     const col = excl ? 'var(--ink-dim)' : (r>=80?'var(--accent)':r>=60?'var(--amber)':'var(--red)');
+    // Nếu đã loại hết tháng đang chọn -> nút "tính lại"; ngược lại -> "bỏ KPI" (áp cho các tháng đang chọn)
+    const isAllSel = state==='all';
+    const stTag = state==='all' ? ' <span class="small mut">(bỏ KPI)</span>'
+                : state==='some' ? ' <span class="small" style="color:var(--amber)">(bỏ KPI vài tháng)</span>' : '';
     const toggle = isAdmin
-      ? `<button class="rowbtn" title="${excl?'Tính lại nhóm này vào KPI':'Loại nhóm này khỏi % SLA của '+esc(nm)}" onclick="event.stopPropagation();toggleKpiExclude('${esc(kpiDrill)}','${g}')">${excl?'➕ tính lại':'🚫 bỏ KPI'}</button>`
+      ? `<button class="rowbtn" title="${isAllSel?'Tính lại nhóm này vào KPI cho '+selLbl:'Loại nhóm này khỏi % SLA của '+esc(nm)+' cho '+selLbl}" onclick="event.stopPropagation();toggleKpiExclude('${esc(kpiDrill)}','${g}')">${isAllSel?'➕ tính lại':'🚫 bỏ KPI'}</button>`
       : (excl?'<span class="small mut">không tính KPI</span>':'');
-    return `<tr${excl?' style="opacity:.55"':''}><td>${esc(gg.name)}${excl?' <span class="small mut">(bỏ KPI)</span>':''}</td><td class="num">${v.n}</td><td class="num mut">${gg.sla} ngày</td>
+    return `<tr${excl?' style="opacity:.6"':''}><td>${esc(gg.name)}${stTag}</td><td class="num">${v.n}</td><td class="num mut">${gg.sla} ngày</td>
       <td class="num" style="color:${col};font-weight:700">${r.toFixed(1)}%</td>
       <td class="num">${pctile(v.days,.5).toFixed(1)}</td>
       <td>${toggle}</td></tr>`;
@@ -1145,6 +1194,7 @@ function renderDrill(rows){
       <button class="btn btn-ghost" onclick="kpiDrill='';renderKpi()">✕ Đóng</button></div>
     <div class="cfg-grid">
       <div><div class="card-title">Theo nhóm chi phí</div>
+        ${isAdmin?`<div class="small mut" style="margin-bottom:6px">🚫 <b>Bỏ KPI</b> chỉ áp cho <b>${esc(selLbl)}</b> — chọn đúng tháng ở bộ lọc trên rồi mới bỏ, các tháng khác không bị ảnh hưởng. (bỏ KPI vài tháng) = nhóm bị loại ở một số tháng ngoài vùng đang chọn.</div>`:''}
         <table><thead><tr><th>Nhóm</th><th>SL</th><th>SLA</th><th>% đạt</th><th>Median</th><th></th></tr></thead><tbody>${gRows}</tbody></table></div>
       <div><div class="card-title">Từng hồ sơ (chậm nhất trước${mine.length>400?', hiện 400 dòng đầu':''})</div>
         <div class="tbl-scroll" style="max-height:320px"><table>
@@ -1185,7 +1235,7 @@ function progAgg(acc, unit, monthSel){
     else { if(!dRec.d || dRec.month!==monthSel) continue; key = dRec.d.slice(8,10); }
     (out[key] = out[key] || {n:0, ok:0, days:[]});
     out[key].n++;
-    if(!kpiExcluded(dRec.acc, dRec.group)){ if(dRec.ok) out[key].ok++; out[key].days.push(dRec.days); }
+    if(!kpiExcluded(dRec.acc, dRec.group, dRec.month)){ if(dRec.ok) out[key].ok++; out[key].days.push(dRec.days); }
   }
   return out;
 }
@@ -1210,7 +1260,7 @@ function progStatsFor(acc, m, maxDay){
     if(d.month!==m) continue;
     if(maxDay>0){ if(!d.d) continue; if(+d.d.slice(8,10) > maxDay) continue; }
     o.n++;
-    if(!kpiExcluded(d.acc, d.group)){ if(d.ok) o.ok++; o.days.push(d.days); }
+    if(!kpiExcluded(d.acc, d.group, d.month)){ if(d.ok) o.ok++; o.days.push(d.days); }
   }
   return progStatsOf(o.n?o:null);
 }
@@ -1369,7 +1419,7 @@ function progSupport(month){
   for(const d of DERIVED.done){
     if(d.month!==month) continue;
     if(CFG.leadAcc.includes(d.acc)) continue;
-    if(!kpiExcluded(d.acc, d.group)) continue;
+    if(!kpiExcluded(d.acc, d.group, d.month)) continue;
     (sup[d.acc] = sup[d.acc] || {n:0, grps:{}});
     sup[d.acc].n++;
     sup[d.acc].grps[d.group] = (sup[d.acc].grps[d.group]||0)+1;
@@ -1483,7 +1533,7 @@ function tongAutoStats(acc, months){
   const n = rows.length;
   // Nhóm bị loại khỏi KPI (kpiExclude theo người, VD hỗ trợ nhóm khác): vẫn đếm SL
   // nhưng KHÔNG tính vào các metric SLA — đồng bộ với cách tab KPI SLA đang tính.
-  const slaRows = rows.filter(d=>!kpiExcluded(d.acc, d.group));
+  const slaRows = rows.filter(d=>!kpiExcluded(d.acc, d.group, d.month));
   const nSla = slaRows.length;
   const ok = slaRows.filter(d=>d.ok).length;
   const over = slaRows.filter(d=>d.over).length;
@@ -2025,7 +2075,7 @@ async function exportDrill(acc){
   const ws = wb.addWorksheet('Chi tiết '+(staffName(acc)||acc).slice(0,25));
   xlsHeader(ws, ['Mã ĐN','Nhóm CP','Nội dung','Tháng B4','Số ngày B3-B4','SLA nhóm','Tính KPI','Kết quả']);
   for(const d of rows){
-    const excl = kpiExcluded(acc, d.group);
+    const excl = kpiExcluded(acc, d.group, d.month);
     const r = ws.addRow([d.ma, grpById(d.group).name, d.muc||'', d.month, Math.round(d.days*10)/10, d.sla, excl?'Không':'Có', d.ok?'Đạt':d.over?'Quá hạn nặng':'Trễ']);
     if(d.over) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
     else if(!d.ok) r.eachCell(c=>{c.fill=XLS_FILL.late;});
