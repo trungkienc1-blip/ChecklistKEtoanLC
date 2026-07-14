@@ -1363,6 +1363,52 @@ function progPersonCharts(acc, allMonths, curM, prevM){
   });
 }
 
+// Đếm hồ sơ hỗ trợ (thuộc nhóm bị loại khỏi % SLA của chính người đó) trong 1 tháng
+function progSupport(month){
+  const sup = {};
+  for(const d of DERIVED.done){
+    if(d.month!==month) continue;
+    if(CFG.leadAcc.includes(d.acc)) continue;
+    if(!kpiExcluded(d.acc, d.group)) continue;
+    (sup[d.acc] = sup[d.acc] || {n:0, grps:{}});
+    sup[d.acc].n++;
+    sup[d.acc].grps[d.group] = (sup[d.acc].grps[d.group]||0)+1;
+  }
+  return Object.entries(sup).map(([acc,v])=>({acc, nm:staffName(acc)||acc, ...v})).sort((a,b)=>b.n-a.n);
+}
+
+function progHallHtml(month){
+  const meAcc = currentUserAcc();
+  const list = progSupport(month);
+  if(!list.length){
+    return `<div class="card"><div class="card-title">🤝 Vinh danh hỗ trợ nhóm khác · ${month}</div>
+      <div class="small mut">Chưa có hồ sơ nào được đánh dấu hỗ trợ trong tháng này. Khi ai đó nhận giúp việc của nhóm khác, admin bấm <b>🚫 bỏ KPI</b> nhóm đó cho người giúp (trong chi tiết tab KPI SLA) — hồ sơ hỗ trợ sẽ xuất hiện ở đây và không làm giảm % SLA của họ.</div></div>`;
+  }
+  const medal = ['🥇','🥈','🥉'];
+  const cards = list.slice(0,3).map((r,i)=>{
+    const grpTxt = Object.entries(r.grps).sort((a,b)=>b[1]-a[1])
+      .map(([g,n])=>`${esc(grpById(g).name.replace(/HC: |\(.*\)/g,'').trim())} (${n})`).join(' · ');
+    const me = r.acc===meAcc;
+    return `<div class="card" style="text-align:center;${me?'background:var(--accent-soft)':''}">
+      <div style="font-size:32px;line-height:1">${medal[i]}</div>
+      <div style="font-weight:700;font-size:15px;margin-top:4px">${esc(r.nm)}${me?' <span class="small mut">(bạn)</span>':''}</div>
+      <div style="font-family:Georgia,serif;font-size:26px;font-weight:700;color:var(--violet)">${r.n.toLocaleString('vi')}</div>
+      <div class="small mut">hồ sơ hỗ trợ</div>
+      <div class="small mut" style="margin-top:4px">${grpTxt}</div>
+    </div>`;
+  }).join('');
+  const rest = list.slice(3).map((r,i)=>{
+    const me = r.acc===meAcc;
+    return `<tr${me?' style="background:var(--accent-soft)"':''}><td class="num mut">${i+4}</td>
+      <td><b>${esc(r.nm)}</b>${me?' <span class="small mut">(bạn)</span>':''}</td>
+      <td class="num" style="color:var(--violet);font-weight:700">${r.n}</td></tr>`;
+  }).join('');
+  return `<div class="card"><div class="card-title">🤝 Vinh danh hỗ trợ nhóm khác · ${month}
+      <span class="small mut" style="font-weight:400">— số hồ sơ nhận giúp nhóm khác (không tính vào % SLA của họ)</span></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px">${cards}</div>
+    ${rest?`<div class="tbl-scroll" style="margin-top:10px"><table><thead><tr><th>#</th><th>Nhân viên</th><th>SL hỗ trợ</th></tr></thead><tbody>${rest}</tbody></table></div>`:''}</div>`;
+}
+
 function progTeamHtml(allMonths, curM, prevM){
   const meAcc = currentUserAcc();
   const cutoff = progMaxDay('', curM);   // cùng kỳ toàn team
@@ -1387,6 +1433,7 @@ function progTeamHtml(allMonths, curM, prevM){
       <div class="tbl-scroll"><table>
         <thead><tr><th>Nhân viên</th><th>SL hồ sơ</th><th>% đạt SLA</th><th>Δ ${cutoff>0?'cùng kỳ':'tháng trước'}</th><th>Median ngày</th></tr></thead>
         <tbody>${trs}</tbody></table></div></div>
+    ${progHallHtml(curM)}
     <div class="card"><div class="card-title">📈 Xu hướng toàn team theo tháng</div>
       <div style="height:280px"><canvas id="progTeamTrend"></canvas></div></div>`;
 }
