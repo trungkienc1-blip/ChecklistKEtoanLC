@@ -813,8 +813,13 @@ function recompute(){
     }
     if(rcv){
       if(CFG.excludeRecv.includes(rcv.acc)){ D.excludedRecv++; continue; }
-      const sorted = [...ap].sort((a,b)=>a.date-b.date);
-      if(sorted.length && sorted[sorted.length-1].role==='RECEIVER'){
+      // Đã chuyển Chief nếu có bước CHIEFACCOUNTANT duyệt cùng lúc hoặc sau B5 (Receiver).
+      // Trước đây dựa vào "bước cuối theo thứ tự sort theo ngày" — khi nhiều bước được
+      // duyệt CÙNG 1 THỜI ĐIỂM (VD 1 người duyệt gộp B4-B8 lúc test ban đầu), sort không
+      // phân biệt được thứ tự thật và có thể xếp nhầm RECEIVER là bước cuối dù
+      // CHIEFACCOUNTANT đã duyệt xong cùng lúc — khiến hồ sơ treo mãi ở "Quên B5".
+      const chiefDone = ap.some(s=>s.role==='CHIEFACCOUNTANT' && s.date>=rcv.date);
+      if(!chiefDone){
         const days = workingDays(rcv.date, today);
         D.pendB.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, acc:rcv.acc, name:staffName(rcv.acc)||rcv.acc, late: days > CFG.b5Days});
       }
