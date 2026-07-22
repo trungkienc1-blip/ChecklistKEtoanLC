@@ -1511,7 +1511,9 @@ function progTeamCharts(allMonths){
 
 /* ════════════════ TAB KPI TỔNG HỢP ════════════════ */
 const MANUAL_LS_KEY = 'kpi_sla_manual_v1';
-let MANUAL = {};  // {quy: {acc: {critId: value}}}
+const MANUAL_VER_KEY = 'kpi_sla_manual_ver';
+const MANUAL_VER = 2; // v1 = key theo quý (Q1..Q4), v2 = key theo tháng ('YYYY-MM')
+let MANUAL = {};  // {monthKey: {acc: {critId: value}}} — nhập tay LUÔN ở mức tháng
 try{ MANUAL = JSON.parse(localStorage.getItem(MANUAL_LS_KEY)) || {}; }catch(e){ MANUAL = {}; }
 function saveManual(){ try{ localStorage.setItem(MANUAL_LS_KEY, JSON.stringify(MANUAL)); }catch(e){} }
 
@@ -1520,7 +1522,43 @@ const Q_MONTHS_2026 = {
   Q3:['2026-07','2026-08','2026-09'], Q4:['2026-10','2026-11','2026-12'],
   YEAR:['2026-01','2026-02','2026-03','2026-04','2026-05','2026-06','2026-07','2026-08','2026-09','2026-10','2026-11','2026-12'],
 };
+
+// Dữ liệu cũ (cfgVer trước đây) lưu MANUAL theo quý (Q1..Q4) — chuyển 1 lần sang
+// theo tháng bằng cách copy giá trị quý vào cả 3 tháng của quý đó. KHÔNG đè lên
+// giá trị tháng đã có sẵn (nếu ai đã nhập theo tháng trước khi migrate chạy).
+function migrateManual(){
+  let ver = 1;
+  try{ ver = parseInt(localStorage.getItem(MANUAL_VER_KEY)||'1', 10); }catch(e){}
+  if(ver >= MANUAL_VER) return;
+  for(const q of ['Q1','Q2','Q3','Q4']){
+    if(!MANUAL[q]) continue;
+    const monthsArr = Q_MONTHS_2026[q];
+    for(const acc of Object.keys(MANUAL[q])){
+      for(const critId of Object.keys(MANUAL[q][acc])){
+        const val = MANUAL[q][acc][critId];
+        for(const m of monthsArr){
+          if(!MANUAL[m]) MANUAL[m] = {};
+          if(!MANUAL[m][acc]) MANUAL[m][acc] = {};
+          if(MANUAL[m][acc][critId] === undefined) MANUAL[m][acc][critId] = val;
+        }
+      }
+    }
+  }
+  try{ localStorage.setItem(MANUAL_VER_KEY, String(MANUAL_VER)); }catch(e){}
+  saveManual();
+}
+migrateManual();
+
 let tongQuy = null;
+let tongUnit = 'quy';   // 'quy' | 'thang' — nhập tay luôn ở mức tháng, xem theo quý = trung bình
+let tongMonth = null;   // 'YYYY-MM' khi tongUnit==='thang'
+
+// Danh sách tháng đang xét theo unit hiện tại (dùng cho AUTO stats + TT count)
+function currentTongMonths(){
+  return tongUnit==='thang' ? (tongMonth ? [tongMonth] : []) : (Q_MONTHS_2026[tongQuy] || []);
+}
+// Nhãn kỳ hiện tại (dùng cho tên sheet Excel, tên file)
+function currentTongLabel(){ return tongUnit==='thang' ? (tongMonth||'') : tongQuy; }
 
 function grade(score){
   if(score>=90) return {lbl:'Xuất sắc', bg:'#16a34a'};
@@ -1555,10 +1593,24 @@ function tongAutoStats(acc, months){
   };
 }
 
+function manualValue(monthKey, acc, critId){
+  const v = MANUAL[monthKey]?.[acc]?.[critId];
+  return (v===undefined || v===null || v==='') ? null : v;
+}
+// Trung bình các tháng ĐÃ NHẬP trong quý (bỏ qua tháng chưa nhập) — null nếu chưa
+// tháng nào có giá trị.
+function manualValueForQuarter(critId, acc, quarterKey){
+  const monthsArr = Q_MONTHS_2026[quarterKey] || [];
+  const nums = monthsArr.map(m=>manualValue(m, acc, critId))
+    .filter(v=>v!==null).map(v=>parseFloat(v)).filter(v=>!isNaN(v));
+  return nums.length ? nums.reduce((a,b)=>a+b,0)/nums.length : null;
+}
+// quy = tongQuy (hoặc 'YEAR') khi tongUnit==='quy'; bị bỏ qua khi tongUnit==='thang'
+// (dùng tongMonth trực tiếp) — xem renderTong()/currentTongMonths().
 function critValue(crit, acc, quy, stats){
   if(crit.type==='auto') return stats ? (stats[crit.metric] ?? null) : null;
-  const v = MANUAL[quy]?.[acc]?.[crit.id];
-  return (v===undefined || v===null || v==='') ? null : v;
+  if(tongUnit==='thang') return manualValue(tongMonth, acc, crit.id);
+  return manualValueForQuarter(crit.id, acc, quy);
 }
 
 // Công thức điểm giữ nguyên KPI gốc. wOverride = trọng số hiệu dụng (khi chia lại
@@ -1609,11 +1661,11 @@ function ttCount(acc, months){
   return DERIVED.doneTT.filter(d=>d.acc===acc && months.includes(d.month)).length;
 }
 
-function setManualKpi(quy, acc, critId, value){
-  if(!MANUAL[quy]) MANUAL[quy]={};
-  if(!MANUAL[quy][acc]) MANUAL[quy][acc]={};
-  if(value==='') delete MANUAL[quy][acc][critId];
-  else MANUAL[quy][acc][critId] = parseFloat(value);
+function setManualKpi(monthKey, acc, critId, value){
+  if(!MANUAL[monthKey]) MANUAL[monthKey]={};
+  if(!MANUAL[monthKey][acc]) MANUAL[monthKey][acc]={};
+  if(value==='') delete MANUAL[monthKey][acc][critId];
+  else MANUAL[monthKey][acc][critId] = parseFloat(value);
   saveManual();
   renderTong();
 }
@@ -1661,11 +1713,19 @@ function buildTongTable(people, criteria, months, infoLabel, infoFn){
         return `<td class="num"><span style="color:${col};font-weight:700">${disp}</span>
           <div class="small mut">${r!==null && !crit.bonus ? r.score.toFixed(1)+' đ' : ''}</div></td>`;
       }
-      const cur = MANUAL[tongQuy]?.[s.acc]?.[crit.id] ?? '';
-      return `<td class="num">
-        <input type="number" step="0.1" style="width:64px" value="${cur}" placeholder="–"
-          onchange="setManualKpi('${tongQuy}','${esc(s.acc)}','${crit.id}',this.value)" ${USER_ROLE!=='admin'?'disabled':''}>
-        <div class="small mut">${r!==null ? (crit.bonus?'+':'')+r.score.toFixed(1)+' đ' : ''}</div></td>`;
+      if(tongUnit==='thang'){
+        const cur = manualValue(tongMonth, s.acc, crit.id) ?? '';
+        return `<td class="num">
+          <input type="number" step="0.1" style="width:64px" value="${cur}" placeholder="–"
+            onchange="setManualKpi('${tongMonth}','${esc(s.acc)}','${crit.id}',this.value)" ${USER_ROLE!=='admin'?'disabled':''}>
+          <div class="small mut">${r!==null ? (crit.bonus?'+':'')+r.score.toFixed(1)+' đ' : ''}</div></td>`;
+      }
+      // Xem theo quý: hiển thị số ĐÃ TÍNH (trung bình các tháng đã nhập), không cho sửa trực tiếp
+      const disp = val===null ? '–' : (Math.round(val*10)/10);
+      const col = r===null ? 'var(--ink-dim)' : (r.pct>=95?'var(--accent)':r.pct>=70?'var(--amber)':'var(--red)');
+      return `<td class="num"><span style="color:${col};font-weight:700">${disp}</span>
+        <div class="small mut">${r!==null && !crit.bonus ? r.score.toFixed(1)+' đ' : ''}</div>
+        <div class="small mut" title="Trung bình các tháng đã nhập trong quý">TB tháng</div></td>`;
     }).join('');
     return `<tr style="${isLead?'background:#eef2f4':''}">
       <td class="num mut">${isLead?'–':(hasAny?rank:'–')}</td>
@@ -1693,12 +1753,19 @@ function renderTong(){
     tongQuy = 'Q2';
     if(latest){ const mm = parseInt(latest.slice(5,7)); tongQuy = 'Q'+Math.min(4, Math.ceil(mm/3)); }
   }
-  const months = Q_MONTHS_2026[tongQuy] || [];
+  if(tongMonth===null){
+    tongMonth = [...DERIVED.months].sort().pop() || Q_MONTHS_2026.YEAR[Q_MONTHS_2026.YEAR.length-1];
+  }
+  const months = currentTongMonths();
   const wsCP = weightSum(CFG.kpiCriteria);
   const wsTT = weightSum(CFG.kpiCriteriaTT);
 
+  const unitToggle = `<span class="chip ${tongUnit==='quy'?'on':''}" onclick="tongUnit='quy';renderTong()">Theo quý</span>
+    <span class="chip ${tongUnit==='thang'?'on':''}" onclick="tongUnit='thang';renderTong()">Theo tháng</span>`;
   const qChips = ['Q1','Q2','Q3','Q4','YEAR'].map(q=>
     `<span class="chip ${tongQuy===q?'on':''}" onclick="tongQuy='${q}';renderTong()">${q==='YEAR'?'Cả năm':q+'/2026'}</span>`).join('');
+  const monthSel = `<select onchange="tongMonth=this.value;renderTong()">${Q_MONTHS_2026.YEAR.map(m=>
+    `<option value="${m}" ${tongMonth===m?'selected':''}>${m}</option>`).join('')}</select>`;
 
   const active = CFG.staff.filter(s=>s.acc && !CFG.excludeRecv.includes(s.acc));
   const cpPeople = active.filter(s=>s.team!=='TT');
@@ -1713,7 +1780,8 @@ function renderTong(){
     ${USER_ROLE==='admin'&&wsTT!==100?`<div class="banner">⚠️ Tổng trọng số chỉ tiêu Team TT đang là <b>${wsTT}%</b> ≠ 100% — chỉnh trong tab ⚙️ Cấu hình.</div>`:''}
     <div class="card">
       <div class="filters">
-        <b style="font-size:13px">Kỳ chấm:</b>${qChips}
+        <b style="font-size:13px">Kỳ chấm:</b>${unitToggle}
+        ${tongUnit==='quy' ? qChips : monthSel}
         <span style="flex:1"></span>
         ${USER_ROLE==='admin'?`<button class="btn btn-ghost" onclick="downloadManualTemplate(false)">⬇ Tải template (Excel/CSV)</button>
         <button class="btn btn-ghost" onclick="document.getElementById('manualImport').click()">⬆ Nạp file KPI (.xlsx/.csv)</button>
@@ -1721,7 +1789,7 @@ function renderTong(){
         <button class="btn btn-success" onclick="exportTong()">⬇ Xuất Excel bảng điểm</button>
       </div>
       ${USER_ROLE==='admin'?`<div class="small mut" style="margin-bottom:8px">
-        Chỉ tiêu <b>AUTO</b> tính trực tiếp từ dữ liệu upload theo SLA nhóm đang cấu hình. Chỉ tiêu <b>NHẬP</b>: gõ trực tiếp trên bảng, hoặc bấm <b>Tải template</b> → điền giá trị thực đạt trong Excel → <b>Nạp file KPI</b> để nhập hàng loạt (điểm tự quy đổi theo trọng số, lưu theo từng quý).
+        Chỉ tiêu <b>AUTO</b> tính trực tiếp từ dữ liệu upload theo SLA nhóm đang cấu hình. Chỉ tiêu <b>NHẬP</b>: nhập theo THÁNG — gõ trực tiếp trên bảng (chế độ "Theo tháng"), hoặc bấm <b>Tải template</b> → điền giá trị thực đạt trong Excel → <b>Nạp file KPI</b> để nhập hàng loạt. Xem "Theo quý" hiển thị điểm trung bình các tháng đã nhập trong quý (không sửa trực tiếp ở view này).
       </div>`:''}
       <div class="card-title" style="color:#2563eb">■ Team CP — chi phí (${cpPeople.length} người)</div>
       ${cpTable}
@@ -1734,35 +1802,37 @@ function renderTong(){
 function manualCrits(list){ return list.filter(c=>c.type!=='auto'); }
 function critNum(c){ return String(c.id).replace(/\D/g,'') || c.id; }
 
-// Xuất template CSV: Nhân viên,Team,Q{q}_CP_{n}_{tên}...,Q{q}_TT_{n}_{tên}...
-function buildManualTemplate(quarters){
+// Xuất template CSV: Nhân viên,Team,M{YYYY-MM}_CP_{n}_{tên}...,M{YYYY-MM}_TT_{n}_{tên}...
+// Nhập tay LUÔN ở mức tháng — 1 cột = 1 tháng (không phải 1 quý như trước).
+function buildManualTemplate(months){
   const cp = manualCrits(CFG.kpiCriteria);
   const tt = manualCrits(CFG.kpiCriteriaTT);
   const hdr = ['Nhân viên','Team'];
-  for(const q of quarters){
-    for(const c of cp) hdr.push(`${q}_CP_${critNum(c)}_${c.name.slice(0,20)}`);
-    for(const c of tt) hdr.push(`${q}_TT_${critNum(c)}_${c.name.slice(0,20)}`);
+  for(const m of months){
+    for(const c of cp) hdr.push(`M${m}_CP_${critNum(c)}_${c.name.slice(0,20)}`);
+    for(const c of tt) hdr.push(`M${m}_TT_${critNum(c)}_${c.name.slice(0,20)}`);
   }
   const rows=[hdr];
   for(const s of CFG.staff){
     if(!s.acc || CFG.excludeRecv.includes(s.acc)) continue;
     const isCP = s.team!=='TT';
     const row=[s.name, isCP?'Team CP':'Team TT'];
-    for(const q of quarters){
-      for(const c of cp){ const v = isCP ? (MANUAL[q]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
-      for(const c of tt){ const v = !isCP ? (MANUAL[q]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
+    for(const m of months){
+      for(const c of cp){ const v = isCP ? (MANUAL[m]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
+      for(const c of tt){ const v = !isCP ? (MANUAL[m]?.[s.acc]?.[c.id]) : undefined; row.push(v!=null?v:''); }
     }
     rows.push(row);
   }
   return rows.map(r=>r.map(x=>`"${String(x).replace(/"/g,'""')}"`).join(',')).join('\n');
 }
 function downloadManualTemplate(allYear){
-  const quarters = allYear ? ['Q1','Q2','Q3','Q4'] : [tongQuy==='YEAR'?'Q2':tongQuy];
+  const months = allYear ? Q_MONTHS_2026.YEAR
+    : (tongUnit==='thang' ? [tongMonth] : (Q_MONTHS_2026[tongQuy] || Q_MONTHS_2026.YEAR));
   const a=document.createElement('a');
-  a.href=URL.createObjectURL(new Blob(['﻿'+buildManualTemplate(quarters)],{type:'text/csv;charset=utf-8'}));
-  a.download=`KPI_Template_NhapTay_${quarters.join('-')}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href=URL.createObjectURL(new Blob(['﻿'+buildManualTemplate(months)],{type:'text/csv;charset=utf-8'}));
+  a.download=`KPI_Template_NhapTay_${months.join('_')}_${new Date().toISOString().slice(0,10)}.csv`;
   a.click();
-  showToast('⬇ Đã tải template '+quarters.join(', ')+' — điền xong nạp lại bằng "Nạp file KPI"');
+  showToast('⬇ Đã tải template '+months.join(', ')+' — điền xong nạp lại bằng "Nạp file KPI"');
 }
 
 function importManualFile(file){
@@ -1777,10 +1847,10 @@ function parseManualCsv(text){
   const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
   if(lines.length<2){ alert('File không có dữ liệu.'); return; }
   const hdr = splitLine(lines[0]);
-  // cột → {quy, team('CP'|'TT'), n}
+  // cột → {month('YYYY-MM'), team('CP'|'TT'), n}
   const colMeta={};
-  for(let i=2;i<hdr.length;i++){ const m=hdr[i].match(/^Q([1-4])_(CP|TT)_(\d+)_/i); if(m) colMeta[i]={quy:'Q'+m[1], team:m[2].toUpperCase(), n:m[3]}; }
-  if(!Object.keys(colMeta).length){ alert('Không nhận dạng được cột. Hãy dùng template tải từ tool này (cột dạng Q2_CP_1_...).'); return; }
+  for(let i=2;i<hdr.length;i++){ const m=hdr[i].match(/^M(\d{4}-\d{2})_(CP|TT)_(\d+)_/i); if(m) colMeta[i]={month:m[1], team:m[2].toUpperCase(), n:m[3]}; }
+  if(!Object.keys(colMeta).length){ alert('Không nhận dạng được cột. Hãy dùng template tải từ tool này (cột dạng M2026-07_CP_1_...).'); return; }
   const cpById = {}; for(const c of manualCrits(CFG.kpiCriteria)) cpById[critNum(c)]=c.id;
   const ttById = {}; for(const c of manualCrits(CFG.kpiCriteriaTT)) ttById[critNum(c)]=c.id;
   let filled=0; const warn=[];
@@ -1799,9 +1869,9 @@ function parseManualCsv(text){
       if(raw==='') continue;
       const val = parseFloat(raw);
       if(isNaN(val)) continue;
-      if(!MANUAL[meta.quy]) MANUAL[meta.quy]={};
-      if(!MANUAL[meta.quy][s.acc]) MANUAL[meta.quy][s.acc]={};
-      MANUAL[meta.quy][s.acc][critId]=val;
+      if(!MANUAL[meta.month]) MANUAL[meta.month]={};
+      if(!MANUAL[meta.month][s.acc]) MANUAL[meta.month][s.acc]={};
+      MANUAL[meta.month][s.acc][critId]=val;
       filled++;
     }
   }
@@ -1811,7 +1881,8 @@ function parseManualCsv(text){
 
 async function exportTong(){
   if(!DERIVED) return;
-  const months = Q_MONTHS_2026[tongQuy] || [];
+  const months = currentTongMonths();
+  const label = currentTongLabel();
   const wb = await buildWb();
   const active = CFG.staff.filter(s=>s.acc && !CFG.excludeRecv.includes(s.acc));
 
@@ -1841,9 +1912,9 @@ async function exportTong(){
     }
     ws.columns.forEach((col,i)=>{ col.width = i===0?16:(i===1?13:12); });
   }
-  addSheet('Team CP '+tongQuy, active.filter(s=>s.team!=='TT'), CFG.kpiCriteria, false);
-  addSheet('Team TT '+tongQuy, active.filter(s=>s.team==='TT'), CFG.kpiCriteriaTT, true);
-  dlWb(wb, 'KPI_TongHop_'+tongQuy+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
+  addSheet('Team CP '+label, active.filter(s=>s.team!=='TT'), CFG.kpiCriteria, false);
+  addSheet('Team TT '+label, active.filter(s=>s.team==='TT'), CFG.kpiCriteriaTT, true);
+  dlWb(wb, 'KPI_TongHop_'+label+'_'+new Date().toISOString().slice(0,10)+'.xlsx');
 }
 
 /* ════════════════ TAB CẤU HÌNH ════════════════ */
