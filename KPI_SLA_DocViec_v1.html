@@ -27,14 +27,15 @@
   .badge-date{font-family:Georgia,serif;font-size:13px;color:var(--ink-dim);white-space:nowrap}
   .banner{background:var(--amber-soft);border:1px solid #e6c98a;color:#8a6010;border-radius:6px;padding:10px 14px;font-size:13px;margin-bottom:14px}
   .topbar{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
-  .drop{border:1.5px dashed var(--line);border-radius:6px;padding:10px 18px;cursor:pointer;font-size:13px;color:var(--ink-dim);background:var(--card);transition:.15s}
-  .drop:hover{border-color:var(--accent);background:var(--accent-soft)}
+  /* Thanh upload sạch, on-brand xanh (bỏ kiểu be + gạch nét đứt AdminLTE cũ) */
+  .drop{width:100%;border:1.5px dashed #c7d2e0;border-radius:10px;padding:12px 18px;cursor:pointer;font-size:12.5px;color:var(--text-secondary, #6B7280);background:#fff;transition:.15s;font-weight:500}
+  .drop:hover{border-color:var(--primary-blue, #0057D9);background:#F0F6FF;color:var(--primary-blue, #0057D9)}
   .fbadge{font-size:12px;background:var(--accent-soft);color:var(--accent);border:1px solid #bfe0d6;border-radius:14px;padding:3px 12px}
   .stat-inline{font-size:12.5px;color:var(--ink-dim)}
   .tabs{display:flex;gap:4px;border-bottom:2px solid var(--navy);margin-bottom:16px}
   .tab{border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:700;color:var(--ink-dim);padding:10px 20px;cursor:pointer;border-radius:6px 6px 0 0}
   .tab.act{background:var(--navy);color:#fff}
-  .card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:16px 18px;margin-bottom:14px}
+  .card{background:var(--card);border:1px solid var(--border-soft, var(--line));border-radius:12px;padding:16px 18px;margin-bottom:14px;box-shadow:var(--shadow-sm)}
   .card-title{font-size:13px;font-weight:700;color:var(--navy-deep);margin-bottom:10px}
   .cards-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:10px;margin-bottom:14px}
   .pcard{background:var(--card);border:1px solid var(--line);border-top:3px solid var(--navy);border-radius:6px;padding:10px 14px;cursor:pointer}
@@ -42,26 +43,40 @@
   .pcard.sel{outline:2px solid var(--accent)}
   .pcard .nm{font-weight:700;font-size:13.5px}
   .pcard .ln{font-size:11.5px;color:var(--ink-dim);margin-top:3px}
-  .pill{font-weight:700;font-size:11px;padding:2px 10px;border-radius:12px;white-space:nowrap;display:inline-block}
-  .p-ok{background:var(--accent-soft);color:var(--accent)}
-  .p-warn{background:var(--amber-soft);color:#8a6010}
-  .p-late{background:var(--orange-soft);color:#94440c}
-  .p-bad{background:var(--red-soft);color:var(--red)}
-  .p-b5{background:var(--violet-soft);color:var(--violet)}
-  .p-grey{background:#eee;color:#777}
+  /* Badge dạng "tag" hiện đại: bo tròn vừa, có chấm tròn màu currentColor phía trước —
+     đúng ngôn ngữ Notion/Linear, thay cho cảm giác badge Bootstrap phẳng cũ. Đồng bộ
+     đúng 1 bảng màu với donut chart Tổng quan + employee card. */
+  .pill{font-weight:700;font-size:11px;padding:3px 10px 3px 8px;border-radius:6px;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;letter-spacing:.01em}
+  .pill::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor;flex:none;opacity:.85}
+  .p-ok{background:#DCFCE7;color:#15803D}
+  .p-warn{background:#FEF3C7;color:#B45309}
+  .p-late{background:#FFEDD5;color:#C2410C}
+  .p-bad{background:#FEE2E2;color:#DC2626}
+  .p-b5{background:#EDE9FE;color:#7C3AED}
+  .p-grey{background:#F1F5F9;color:#64748B}
   table{width:100%;border-collapse:collapse;font-size:12.5px}
-  thead tr{background:var(--navy)}
-  thead th{padding:8px 10px;text-align:left;color:#fff;font-size:12px;white-space:nowrap;position:sticky;top:0}
-  tbody td{padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-  tbody tr:nth-child(even){background:#fafaf8}
-  .tbl-scroll{overflow:auto;max-height:560px;border:1px solid var(--line);border-radius:5px}
-  .btn{border:none;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;padding:8px 15px;font-family:inherit}
+  /* Header bảng nền xanh thương hiệu + chữ trắng — đúng ảnh UIUX mẫu (token #0057D9) */
+  thead tr{background:var(--primary-blue, #0057D9)}
+  /* QUAN TRỌNG: nền phải đặt trên chính <th> chứ không chỉ trên <tr> — vì sticky nằm ở
+     <th>; nếu chỉ tô nền ở <tr> thì khi cuộn, nền trôi đi mất, <th> thành trong suốt và
+     các dòng dữ liệu cuộn xuyên qua, đè chồng lên chữ tiêu đề. z-index để header luôn
+     nằm trên dòng dữ liệu (kể cả ô có select/pill). */
+  thead th{padding:11px 12px;text-align:left;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.03em;white-space:nowrap;position:sticky;top:0;z-index:3;background:var(--primary-blue, #0057D9)}
+  tbody td{padding:10px 12px;border-bottom:1px solid var(--border-soft, var(--line));vertical-align:top}
+  tbody tr:nth-child(even){background:#FBFCFE}
+  tbody tr:hover{background:#F8FAFC}
+  .tbl-scroll{overflow:auto;max-height:560px;border:1px solid var(--border-soft, var(--line));border-radius:var(--radius-lg,10px)}
+  .btn{border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;padding:8px 15px;font-family:inherit;transition:filter .1s,background .12s}
+  .btn:hover{filter:brightness(.96)}
   .btn:disabled{opacity:.5;cursor:not-allowed}
-  .btn-primary{background:var(--navy);color:#fff}
+  .btn-primary{background:var(--primary-blue,var(--navy));color:#fff}
   .btn-success{background:var(--accent);color:#fff}
-  .btn-ghost{background:transparent;border:1px solid var(--line);color:var(--ink-dim)}
-  .btn-danger{background:var(--red-soft);color:var(--red);border:1px solid #e6a8a8}
-  select,input[type=text],input[type=number]{font-family:inherit;font-size:12.5px;padding:6px 8px;border:1px solid var(--line);border-radius:5px;background:#fff;color:var(--ink)}
+  .btn-ghost{background:transparent;border:1px solid var(--border-soft, var(--line));color:var(--text-secondary, var(--ink-dim))}
+  .btn-ghost:hover{background:#F8FAFC}
+  .btn-danger{background:#FEE2E2;color:#DC2626;border:1px solid #fecaca}
+  select,input[type=text],input[type=number]{font-family:inherit;font-size:12.5px;padding:7px 10px;border:1px solid var(--border-soft, var(--line));border-radius:8px;background:#fff;color:var(--ink);transition:border-color .12s}
+  select:hover,input[type=text]:hover,input[type=number]:hover{border-color:#c7cdd6}
+  select:focus,input[type=text]:focus,input[type=number]:focus{outline:none;border-color:var(--primary-blue,#2563eb);box-shadow:0 0 0 3px rgba(0,87,217,.12)}
   input[type=number]{width:70px}
   .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
   .mut{color:var(--ink-dim)} .mono{font-family:Consolas,monospace}
@@ -75,50 +90,200 @@
   @media(max-width:900px){.cfg-grid{grid-template-columns:1fr}}
   .warnbadge{background:var(--red-soft);color:var(--red);font-size:10px;font-weight:700;border-radius:8px;padding:1px 7px;margin-left:5px}
   .rowbtn{border:none;background:transparent;color:var(--red);cursor:pointer;font-size:13px}
-  .chip{font-size:12px;border:1px solid var(--line);border-radius:14px;padding:3px 12px;cursor:pointer;background:var(--card);color:var(--ink-dim)}
-  .chip.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+  .chip{font-size:12px;border:1px solid var(--border-soft, var(--line));border-radius:20px;padding:5px 13px;cursor:pointer;background:var(--card);color:var(--text-secondary, var(--ink-dim));font-weight:600;transition:.12s}
+  .chip:hover{border-color:#c7cdd6;background:#F8FAFC}
+  .chip.on{background:var(--primary-blue,var(--navy));color:#fff;border-color:var(--primary-blue,var(--navy))}
   .drill{background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:14px 16px;margin-bottom:14px}
-  .empty{text-align:center;color:var(--ink-dim);padding:26px;font-size:13px}
+  .empty{text-align:center;color:var(--ink-dim);padding:26px;font-size:13px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:60px}
   .bar-out{height:6px;background:#eee;border-radius:4px;overflow:hidden;min-width:70px}
   .bar-in{height:100%;border-radius:4px}
   footer.note{margin-top:26px;font-size:12px;color:var(--ink-dim);text-align:center;border-top:1px solid var(--line);padding-top:14px}
+
+  /* ═══ Khung sườn sidebar + Tổng quan (thêm mới — không đổi biến/rule ở trên) ═══ */
+  :root{
+    --blue:#2563eb; --blue-soft:#e8f0fe; --sb-w:236px;
+    --lc-blue:#0033a0; --lc-orange:#f7941d; --lc-green:#4caf50; /* màu thương hiệu Long Châu */
+    --line:#e5e7eb; /* ghi đè --line gốc bằng xám nhạt chuẩn hơn (đồng nhất cho cả app) */
+    --shadow-sm:0 1px 2px rgba(15,23,42,.04), 0 4px 16px -2px rgba(15,23,42,.07);
+    --radius-lg:12px;
+    /* Design tokens theo bảng màu UIUX mẫu (COLOR SYSTEM) — dùng cho khung sườn +
+       tab Tổng quan; KHÔNG đổi --navy/--red gốc để tránh ảnh hưởng 5 tab cũ. */
+    --primary-blue:#0057D9;
+    --sidebar-bg:#0B2746; --sidebar-hover:#133A66; --sidebar-active:#2563EB;
+    --bg-page:#F6F8FB;
+    --text-primary:#111827; --text-secondary:#6B7280;
+    --success:#22C55E; --warning:#F59E0B; --danger:#DC2626; --purple:#8B5CF6;
+    --border-soft:rgba(17,24,39,.08);
+    /* 3 tầng shadow tạo chiều sâu theo thứ tự thị giác: KPI (đậm nhất) → Chart/Widget
+       (vừa) → Employee card (nhẹ nhất) — mắt người dùng đi theo đúng thứ tự này. */
+    --shadow-1:0 1px 2px rgba(15,23,42,.04), 0 10px 24px -8px rgba(15,23,42,.14);
+    --shadow-2:0 1px 2px rgba(15,23,42,.04), 0 6px 18px -6px rgba(15,23,42,.10);
+    --shadow-3:0 1px 2px rgba(15,23,42,.04), 0 3px 10px -3px rgba(15,23,42,.08);
+  }
+  html,body{height:100%}
+  .app-shell{display:flex;min-height:100vh}
+  .sidebar{width:var(--sb-w);flex:none;background:var(--sidebar-bg);color:#dbe6ea;display:flex;flex-direction:column;padding:20px 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .sidebar-brand{padding:4px 18px 20px;border-bottom:1px solid rgba(255,255,255,.1);margin-bottom:18px;display:flex;flex-direction:column;align-items:flex-start;gap:14px}
+  /* Logo bản chữ-TRẮNG (giữ icon FPT màu, nền trong suốt — tự tạo từ logo_pharmacy.png)
+     đặt thẳng trên nền tối như ảnh mẫu, KHÔNG ô trắng. Nếu file bản trắng thiếu thì
+     onerror rớt về logo gốc + class .logo-fallback (bọc ô trắng để không bị chìm). */
+  .sidebar-logo{width:100%;max-width:190px;height:auto;object-fit:contain;display:block}
+  .sidebar-logo.logo-fallback{background:#fff;padding:11px 14px;border-radius:12px;box-shadow:0 6px 18px rgba(0,0,0,.28)}
+  .sidebar-brand .tag{font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:#8fb9cf;font-weight:700;margin:0;line-height:1.55}
+  /* Font serif "Source Serif Pro" thiếu bộ dấu tiếng Việt đầy đủ → dấu bị vỡ. Đổi về
+     sans; giữ làm dòng phụ nhẹ dưới tag (ảnh mẫu chỉ có logo + tag mô tả). */
+  .sidebar-brand h1{font-family:inherit;font-size:12px;font-weight:600;color:#b7c4cc;margin:0;letter-spacing:0;line-height:1.35}
+  .sidebar-nav{display:flex;flex-direction:column;gap:4px;padding:0 12px;flex:1}
+  .snav{display:flex;align-items:center;gap:11px;border:none;background:transparent;color:#b9c7cc;font-family:inherit;font-size:13.5px;font-weight:600;padding:11px 13px;border-radius:9px;cursor:pointer;text-align:left;width:100%;line-height:1;transition:background .12s,color .12s}
+  .snav:hover{background:var(--sidebar-hover);color:#fff}
+  .snav.act{background:var(--sidebar-active);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4);font-weight:700}
+  /* Bảng "Chi tiết hồ sơ" đã gộp vào cuối tab Tổng quan → ẩn tab Theo dõi công việc
+     riêng cho gọn (nội dung/hàm renderDoc giữ nguyên phòng khi cần bật lại). */
+  .snav[data-tab="doc"]{display:none}
+  .sidebar-foot{padding:14px 18px 0;border-top:1px solid rgba(255,255,255,.12);margin-top:12px;font-size:12px;color:#9fb0b6;line-height:1.5}
+  .main-col{flex:1;min-width:0;display:flex;flex-direction:column}
+  .topheader{display:flex;align-items:center;gap:20px;flex-wrap:wrap;background:var(--card);border-bottom:1px solid var(--line);padding:18px 28px 16px}
+  /* Tiêu đề tab NỔI BẬT (chính) + breadcrumb nhỏ dưới, đúng bố cục ảnh thiết kế mẫu.
+     Dùng CSS order + flex-basis:100% để tách th-sync xuống hẳn 1 dòng riêng thoáng hơn
+     (KHÔNG đổi thứ tự trong HTML) — tránh cảnh dồn hết badge chung 1 dòng với tiêu đề. */
+  .th-title-wrap{display:flex;flex-direction:column;gap:3px;order:1}
+  .th-title{font-family:inherit;font-size:22px;font-weight:800;color:var(--text-primary);white-space:nowrap;letter-spacing:-.01em;text-transform:uppercase}
+  .th-breadcrumb{font-size:11.5px;color:var(--text-secondary);white-space:nowrap}
+  .th-actions{order:2;display:flex;gap:10px;margin-left:auto;flex-wrap:wrap;align-items:center}
+  /* Badge trạng thái (Firebase, lưu lúc, thống kê) — hàng meta phụ nhẹ nhàng dưới tiêu
+     đề, KHÔNG vạch chia nặng, chỉ khoảng cách thoáng; các pill xám nhạt sạch như ảnh mẫu */
+  .th-sync{order:3;flex-basis:100%;font-size:11px;color:var(--text-secondary);display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:transparent;border:none;margin-top:10px;padding:0}
+  #todayBadge{display:none} /* trùng với ngày trong badge Firebase — ẩn cho gọn, đúng ảnh mẫu */
+  /* .fbadge chỉ dùng riêng trong khu vực này (renderFileBadges) — an toàn khi ghi đè
+     màu xanh-lá đậm gốc thành xám nhạt trung tính, giảm độ nổi theo yêu cầu thiết kế. */
+  .th-sync .fbadge{font-weight:600;font-size:10.5px;padding:3px 10px;opacity:.9;background:#F1F4F8 !important;color:var(--text-secondary) !important;border-color:var(--border-soft) !important;border-radius:7px}
+  .th-sync .stat-inline{color:var(--text-secondary);opacity:.85;font-size:11px;border-left:1px solid var(--line);padding-left:10px;margin-left:2px}
+  .th-actions .btn{height:40px;padding:0 16px;display:inline-flex;align-items:center;gap:6px}
+  /* Nút "Xuất Excel" ở header mới dùng xanh dương theo thiết kế mẫu, KHÔNG đổi
+     .btn-primary gốc (đang dùng chung với nút ở tab Cấu hình cũ). */
+  .th-actions .btn-primary{background:var(--primary-blue)}
+  .th-logo-right{height:40px;object-fit:contain;margin-left:8px} /* +25% so với 32px */
+  .content-pad{padding:22px 26px 44px;background:var(--bg-page)}
+  @media(max-width:820px){ .sidebar{position:fixed;left:-100%;z-index:50;transition:left .2s} .main-col{width:100%} }
+
+  /* Tổng quan: thẻ số liệu + widget — dãn cách SIẾT theo ảnh mẫu (khoảng cách giữa các
+     hàng ~16-18px, không phải 34-36px như trước; card padding gọn hơn cho đỡ trống). */
+  .ov-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:18px}
+  /* Tầng 1 (nổi nhất về thị giác) — mắt nhìn vào KPI trước tiên */
+  .ov-card{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:18px 22px;display:flex;gap:16px;align-items:center;box-shadow:var(--shadow-1);transition:box-shadow .15s,transform .15s}
+  .ov-card:hover{box-shadow:0 1px 2px rgba(15,23,42,.04), 0 14px 30px -8px rgba(15,23,42,.18);transform:translateY(-1px)}
+  .ov-ic{width:58px;height:58px;border-radius:var(--radius-lg);display:flex;align-items:center;justify-content:center;font-size:27px;flex:none;position:relative;box-shadow:inset 0 0 0 1px rgba(15,23,42,.03)}
+  /* Nền icon pastel nhạt đúng hex trong bảng màu thiết kế — override lại style inline
+     cũ (blue-soft/amber-soft/violet-soft/red-soft) bằng đúng token mới, theo thứ tự cố
+     định 4 thẻ trong renderOverview() (không sửa JS). */
+  .ov-stats > .ov-card:nth-child(1) .ov-ic{background:linear-gradient(135deg,#EAF3FF,#D6E8FF) !important;color:var(--primary-blue) !important}
+  .ov-stats > .ov-card:nth-child(2) .ov-ic{background:linear-gradient(135deg,#FFF4E5,#FFE7C7) !important;color:#B45309 !important}
+  .ov-stats > .ov-card:nth-child(3) .ov-ic{background:linear-gradient(135deg,#F4ECFF,#E7D9FF) !important;color:var(--purple) !important}
+  .ov-stats > .ov-card:nth-child(4) .ov-ic{background:linear-gradient(135deg,#FDECEC,#FBD9D9) !important;color:var(--danger) !important}
+  .ov-num{font-family:inherit;font-size:32px;font-weight:800;color:var(--text-primary);line-height:1.1;margin-bottom:2px;letter-spacing:-.02em;font-feature-settings:"tnum"}
+  .ov-lbl{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:5px}
+  .ov-delta-up{color:var(--danger);font-size:12px;font-weight:700}
+  .ov-delta-down{color:var(--success);font-size:12px;font-weight:700}
+  .ov-widgets{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:16px;margin-bottom:18px}
+  @media(max-width:1100px){ .ov-widgets{grid-template-columns:1fr} }
+  /* Tầng 2 — vừa phải, đứng sau KPI trong thứ tự thị giác */
+  .ov-widget{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:18px 20px;box-shadow:var(--shadow-2)}
+  .ov-widget-title{font-size:11.5px;font-weight:700;color:var(--text-secondary);margin-bottom:14px;letter-spacing:.05em;text-transform:uppercase}
+  #ovDonut{filter:drop-shadow(0 6px 14px rgba(15,23,42,.12))}
+  .ov-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;height:100%;color:var(--text-secondary);text-align:center;padding:10px}
+  .ov-empty .ov-empty-ic{font-size:34px;opacity:.35}
+  .ov-empty .small{font-size:12px;opacity:.85}
+  /* Legend BÊN TRÁI + donut BÊN PHẢI (nằm ngang) — đúng bố cục ảnh mẫu, giúp khối chỉ
+     cao ~230px thay vì ~380px khi xếp dọc (kéo 2 widget bên cạnh trống theo). */
+  .ov-donut-wrap{display:flex;align-items:center;gap:16px}
+  .ov-legend{flex:1;min-width:0;display:flex;flex-direction:column;gap:7px;font-size:12.5px}
+  .ov-legend > span{display:flex;align-items:center;color:var(--text-secondary);white-space:nowrap}
+  .ov-legend > span > i{width:9px;height:9px;border-radius:2px;margin-right:8px;flex:none;display:inline-block}
+  .ov-legend > span b{color:var(--text-primary);margin-left:auto;padding-left:10px;font-weight:800;font-size:13.5px;font-feature-settings:"tnum"}
+  .ov-donut-box{position:relative;width:152px;height:152px;flex:none}
+  @media(max-width:1320px){ .ov-donut-wrap{flex-direction:column-reverse;gap:12px} .ov-legend{width:100%;flex:none} }
+  .ov-top-row{display:flex;align-items:center;gap:10px;margin-bottom:11px;font-size:12.5px}
+  .ov-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-soft);color:var(--blue);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;flex:none}
+  .ov-top-bar-out{flex:1;height:7px;background:#EEF1F5;border-radius:5px;overflow:hidden}
+  .ov-top-bar-in{height:100%;background:var(--danger);border-radius:5px}
+  /* Đổi từ 1 dòng cuộn ngang sang lưới nhiều dòng — hiện đủ tên nhân viên, không cần kéo ngang */
+  .ov-emp-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(196px,1fr));gap:14px;margin-bottom:20px}
+  /* Tầng 3 (nhẹ nhất) — đứng sau KPI + Chart trong thứ tự thị giác */
+  .ov-emp-card{background:var(--card);border:1px solid var(--border-soft);border-radius:var(--radius-lg);padding:16px 16px 18px;box-shadow:var(--shadow-3);transition:box-shadow .15s,transform .15s;min-width:0}
+  .ov-emp-card:hover{box-shadow:var(--shadow-2);transform:translateY(-1px)}
+  .ov-emp-card .small.mut{line-height:1.6;color:var(--text-secondary)}
+  .ov-emp-card b{white-space:normal !important;overflow:visible !important;text-overflow:unset !important;word-break:break-word;color:var(--text-primary)}
+  /* Badge dạng tag có chấm tròn (đồng bộ .pill toàn app) — nhắm đúng 3 span theo thứ tự
+     cố định trong renderEmployeeCards() bằng :nth-child, !important để đè màu chữ
+     inline do JS sinh ra (không sửa JS). */
+  .ov-emp-card .small > span{display:inline-flex;align-items:center;gap:5px;padding:3px 9px 3px 8px;border-radius:7px;font-size:10.5px;font-weight:700 !important}
+  .ov-emp-card .small > span::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex:none;opacity:.85}
+  .ov-emp-card .small > span:nth-child(1){background:#FEE2E2;color:var(--danger) !important}
+  .ov-emp-card .small > span:nth-child(2){background:#FEF3C7;color:#D97706 !important}
+  .ov-emp-card .small > span:nth-child(3){background:#EDE9FE;color:#7C3AED !important}
+  /* Badge = 0 → xám nhạt, KHÔNG lên màu cảnh báo (đỡ lòe loẹt khi cả vùng toàn số 0).
+     Đặt SAU 3 rule màu trên + cùng độ đặc hiệu → thắng theo thứ tự nguồn. */
+  .ov-emp-card .small > span.zero{background:#F1F5F9 !important;color:#94A3B8 !important;font-weight:600 !important}
+  .ov-emp-card .small > span.zero::before{opacity:.5}
+  .ov-emp-bar-out{height:8px;background:#EEF1F5;border-radius:6px;overflow:hidden;margin-top:13px}
+  .ov-emp-bar-in{height:100%;border-radius:6px}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <div class="masthead">
-    <div>
+<div class="app-shell">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <img class="sidebar-logo" src="logo_pharmacy_white.png" alt="Nhà thuốc Long Châu" onerror="this.onerror=null;this.src='logo_pharmacy.png';this.classList.add('logo-fallback')">
       <div class="tag">Kế toán · SLA theo nhóm chi phí</div>
       <h1>KPI SLA &amp; Theo dõi hồ sơ</h1>
-      <p>Phân loại nhóm chi phí tự động · SLA riêng từng nhóm · Cảnh báo hồ sơ chờ B4 và quên chuyển B5 · KPI công bằng theo người thực duyệt</p>
     </div>
-    <div class="badge-date" id="todayBadge"></div>
+    <nav class="sidebar-nav">
+      <button class="snav act" data-tab="overview" onclick="switchTab('overview')">🏠 Tổng quan</button>
+      <button class="snav" data-tab="doc" onclick="switchTab('doc')">📋 Theo dõi công việc</button>
+      <button class="snav" data-tab="kpi" onclick="switchTab('kpi')">📊 KPI SLA</button>
+      <button class="snav" data-tab="tong" onclick="switchTab('tong')">🏆 KPI tổng hợp</button>
+      <button class="snav" data-tab="prog" onclick="switchTab('prog')">📈 Tiến độ</button>
+      <button class="snav" data-tab="cfg" onclick="switchTab('cfg')">⚙️ Cấu hình</button>
+    </nav>
+    <div class="sidebar-foot" id="sidebarUser"></div>
+  </aside>
+
+  <div class="main-col">
+    <div class="topheader">
+      <div class="th-title-wrap">
+        <div class="th-title" id="thTitle">Tổng quan</div>
+        <div class="th-breadcrumb">Dashboard <span id="thCrumb">›  Tổng quan</span></div>
+      </div>
+      <div class="th-sync">
+        <span id="todayBadge"></span>
+        <div id="fileBadges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+        <div class="stat-inline" id="statLine"></div>
+      </div>
+      <div class="th-actions">
+        <span id="adminActions" style="display:inline-flex;gap:10px;align-items:center"></span>
+        <button class="btn btn-ghost" onclick="syncNow()">☁ Đồng bộ</button>
+        <button class="btn btn-primary" onclick="exportCurrentTab()">⬇ Xuất Excel</button>
+        <img class="th-logo-right" src="logo_vaccine.png" alt="Tiêm chủng Long Châu" onerror="this.style.display='none'">
+      </div>
+    </div>
+
+    <div class="content-pad">
+      <div id="cfgBanner"></div>
+      <div class="topbar">
+        <div class="drop" id="drop">📂 Thả 1 file "Báo cáo các đề nghị chưa hoàn tất" (.xlsx) mới nhất — file mới sẽ THAY THẾ toàn bộ dữ liệu cũ, tự lưu lại qua các lần mở</div>
+        <input type="file" id="fileInput" accept=".xlsx" multiple style="display:none" />
+      </div>
+
+      <div id="tab-overview"></div>
+      <div id="tab-doc" style="display:none"></div>
+      <div id="tab-kpi" style="display:none"></div>
+      <div id="tab-tong" style="display:none"></div>
+      <div id="tab-prog" style="display:none"></div>
+      <div id="tab-cfg" style="display:none"></div>
+
+      <footer class="note">Cấu hình và dữ liệu lưu trên Firebase — mọi thành viên đều thấy cùng dữ liệu.</footer>
+    </div>
   </div>
-
-  <div id="cfgBanner"></div>
-
-  <div class="topbar">
-    <div class="drop" id="drop">📂 Thả 1 file "Báo cáo các đề nghị chưa hoàn tất" (.xlsx) mới nhất — file mới sẽ THAY THẾ toàn bộ dữ liệu cũ, tự lưu lại qua các lần mở</div>
-    <input type="file" id="fileInput" accept=".xlsx" multiple style="display:none" />
-    <div id="fileBadges" style="display:flex;gap:6px;flex-wrap:wrap"></div>
-    <div class="stat-inline" id="statLine"></div>
-  </div>
-
-  <div class="tabs">
-    <button class="tab act" data-tab="doc" onclick="switchTab('doc')">📋 Theo dõi công việc</button>
-    <button class="tab" data-tab="kpi" onclick="switchTab('kpi')">📊 KPI SLA</button>
-    <button class="tab" data-tab="tong" onclick="switchTab('tong')">🏆 KPI tổng hợp</button>
-    <button class="tab" data-tab="prog" onclick="switchTab('prog')">📈 Tiến độ</button>
-    <button class="tab" data-tab="cfg" onclick="switchTab('cfg')">⚙️ Cấu hình</button>
-  </div>
-
-  <div id="tab-doc"></div>
-  <div id="tab-kpi" style="display:none"></div>
-  <div id="tab-tong" style="display:none"></div>
-  <div id="tab-prog" style="display:none"></div>
-  <div id="tab-cfg" style="display:none"></div>
-
-  <footer class="note">Cấu hình và dữ liệu lưu trên Firebase — mọi thành viên đều thấy cùng dữ liệu.</footer>
 </div>
 <div id="authBarrier" style="position:fixed;inset:0;background:#f4f3ef;z-index:999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px">
   <div id="authSpinner" style="width:28px;height:28px;border:3px solid #e2e0d8;border-top-color:#2d6a4f;border-radius:50%;animation:sp .8s linear infinite"></div>
@@ -551,6 +716,17 @@ function parseApprDate(s){
   if(m[7].toLowerCase()==='am' && h===12) h=0;
   return new Date(parseInt(m[3]), mi, parseInt(m[1]), h, parseInt(m[5]), parseInt(m[6]));
 }
+// Cột "Ngày gửi" dùng format khác (MM/DD/YYYY HH:MM AM/PM) — parser riêng, không
+// đụng parseApprDate (dùng cho cột "Phê duyệt", format DD-MMM-YYYY HH:MM:SS AM/PM).
+function parseSubmitDate(s){
+  if(!s || typeof s !== 'string') return null;
+  const m = s.trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}):(\d{2})\s+([AaPp][Mm])$/);
+  if(!m) return null;
+  let h = parseInt(m[4],10);
+  if(m[6].toLowerCase()==='pm' && h<12) h+=12;
+  if(m[6].toLowerCase()==='am' && h===12) h=0;
+  return new Date(parseInt(m[3]), parseInt(m[1])-1, parseInt(m[2]), h, parseInt(m[5]));
+}
 
 let STORE = new Map();   // mã đề nghị -> record
 let FILES = [];          // {name, rows}
@@ -676,6 +852,7 @@ function ingest(rows){
   const iTien = headers.indexOf('Tổng tiền');
   const iFlow = headers.indexOf('Quy trình phê duyệt');
   const iNt   = headers.indexOf('Người tạo');
+  const iNgayGui = headers.indexOf('Ngày gửi');
   const iPd   = headers.indexOf('Phê duyệt');
   if(iMa===-1 || iPd===-1) { alert('File thiếu cột "Mã đề nghị" hoặc "Phê duyệt".'); return 0; }
   let n=0;
@@ -698,6 +875,7 @@ function ingest(rows){
       tien: iTien>=0 ? (row[iTien]||0) : 0,
       flow: iFlow>=0 ? String(row[iFlow]||'') : '',
       creator: iNt>=0 ? String(row[iNt]||'') : '',
+      ngayGui: iNgayGui>=0 ? parseSubmitDate(row[iNgayGui]) : null,
       steps,
     });
     n++;
@@ -826,11 +1004,29 @@ function recompute(){
       if(mgrDate && rcv.date >= mgrDate){
         const days = workingDays(mgrDate, rcv.date);
         if(days<=365){
-          const month = rcv.date.toISOString().slice(0,7);
+          // Dùng NGÀY ĐỊA PHƯƠNG (không phải UTC) cho cả month và d — trước đây
+          // toISOString() đẩy hồ sơ duyệt lúc 0-7h sáng (giờ VN, UTC+7) sang ngày hôm
+          // trước, sai ngày/sai tháng ở ranh giới. month và d PHẢI cùng gốc, nếu không
+          // tab Tiến độ (lọc theo month rồi lấy ngày từ d) sẽ lệch.
+          const dStr = localDateStr(rcv.date);
+          const month = dStr.slice(0,7);
           D.months.add(month);
-          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, days, acc:rcv.acc, month, d:rcv.date.toISOString().slice(0,10), ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, days, acc:rcv.acc, month, d:dStr, ok: days <= g.sla, over: days > g.ov, sla:g.sla});
         }
       }
+    }
+  }
+  // Số hồ sơ PHÁT SINH theo ngày tạo (cột "Ngày gửi") — map nhỏ gọn 60 ngày gần nhất,
+  // dùng cho đường "Hồ sơ phát sinh" ở biểu đồ xu hướng. Tính sẵn ở đây rồi đẩy kèm
+  // trong stats, vì nhét ngayGui vào từng dòng done (~26k dòng) sẽ phình payload.
+  D.newByDay = {};
+  {
+    const lim = new Date(); lim.setDate(lim.getDate()-59);
+    const limStr = localDateStr(lim);
+    for(const rec of STORE.values()){
+      if(!rec.ngayGui) continue;
+      const k = localDateStr(rec.ngayGui);
+      if(k >= limStr) D.newByDay[k] = (D.newByDay[k]||0)+1;
     }
   }
   DERIVED = D;
@@ -860,18 +1056,39 @@ function pctile(arr, p){
 /* ════════════════ UI CHUNG ════════════════ */
 function esc(s){ return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function fmtD(d){ return d==null?'–':d.toLocaleDateString('vi-VN'); }
+const TAB_TITLES = {overview:'Tổng quan', doc:'Theo dõi công việc', kpi:'KPI SLA', tong:'KPI tổng hợp', prog:'Tiến độ', cfg:'Cấu hình'};
 function switchTab(t){
-  for(const b of document.querySelectorAll('.tab')) b.classList.toggle('act', b.dataset.tab===t);
-  for(const id of ['doc','kpi','tong','prog','cfg']) document.getElementById('tab-'+id).style.display = id===t?'':'none';
-  if(t==='doc') renderDoc(); else if(t==='kpi') renderKpi(); else if(t==='tong') renderTong(); else if(t==='prog') renderProgress(); else renderCfg();
+  for(const b of document.querySelectorAll('.snav')) b.classList.toggle('act', b.dataset.tab===t);
+  for(const id of ['overview','doc','kpi','tong','prog','cfg']) document.getElementById('tab-'+id).style.display = id===t?'':'none';
+  const th = document.getElementById('thTitle'); if(th) th.textContent = TAB_TITLES[t] || '';
+  const thC = document.getElementById('thCrumb'); if(thC) thC.textContent = '›  ' + (TAB_TITLES[t] || '');
+  if(t==='overview') renderOverview(); else if(t==='doc') renderDoc(); else if(t==='kpi') renderKpi(); else if(t==='tong') renderTong(); else if(t==='prog') renderProgress(); else renderCfg();
+}
+function syncNow(){
+  fbLoadData().then(ok=>{ if(ok!==false) showToast('☁ Đã đồng bộ dữ liệu mới nhất'); renderAll(); });
+}
+function exportCurrentTab(){
+  const t = document.querySelector('.snav.act')?.dataset.tab || 'overview';
+  if(t==='overview' || t==='doc') exportDoc();
+  else if(t==='kpi') exportKpi();
+  else if(t==='tong') exportTong();
+  else if(t==='cfg') exportCfg();
+  else showToast('Tab "'+(TAB_TITLES[t]||t)+'" chưa có xuất Excel riêng.');
 }
 function renderFileBadges(){
   const saved = dataSavedAt ? `<span class="fbadge" style="background:#eef2f4;color:var(--ink-dim);border-color:var(--line)">💾 lưu lúc ${new Date(dataSavedAt).toLocaleString('vi-VN')}</span>` : '';
   const isAdmin = (typeof USER_ROLE!=='undefined' && USER_ROLE==='admin');
-  const clearBtn = (FILES.length && isAdmin) ? `<button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="clearData()" title="Xóa dữ liệu báo cáo đã lưu">🗑</button>` : '';
-  const reloadBtn = isAdmin ? `<button class="btn btn-ghost" style="padding:3px 10px;font-size:12px" onclick="autoLoadLatest(true)" title="Nạp file report_latest.xlsx mới nhất do script tải về">🔄 Nạp báo cáo mới nhất</button>` : '';
+  // Chỉ badge thông tin (file + lưu lúc) nằm ở hàng meta dưới tiêu đề — cho sạch như ảnh mẫu.
   document.getElementById('fileBadges').innerHTML =
-    FILES.map(f=>`<span class="fbadge">✓ ${esc(f.name)} · ${f.rows.toLocaleString('vi')} dòng</span>`).join('') + saved + reloadBtn + clearBtn;
+    FILES.map(f=>`<span class="fbadge">✓ ${esc(f.name)} · ${f.rows.toLocaleString('vi')} dòng</span>`).join('') + saved;
+  // Nút thao tác admin (Nạp báo cáo / Xóa) chuyển lên nhóm nút góc phải header (đúng bố
+  // cục ảnh mẫu). Chỉ đổi vị trí HIỂN THỊ — onclick + quyền admin giữ nguyên.
+  const admin = document.getElementById('adminActions');
+  if(admin){
+    const clearBtn = (FILES.length && isAdmin) ? `<button class="btn btn-ghost" onclick="clearData()" title="Xóa dữ liệu báo cáo đã lưu">🗑</button>` : '';
+    const reloadBtn = isAdmin ? `<button class="btn btn-ghost" onclick="autoLoadLatest(true)" title="Nạp file report_latest.xlsx mới nhất do script tải về">🔄 Nạp báo cáo</button>` : '';
+    admin.innerHTML = reloadBtn + clearBtn;
+  }
 }
 function renderStatLine(){
   if(!DERIVED){ document.getElementById('statLine').textContent=''; return; }
@@ -884,8 +1101,14 @@ function renderStatLine(){
 }
 function renderAll(){
   renderBanner();
-  const act = document.querySelector('.tab.act')?.dataset.tab || 'doc';
+  const act = document.querySelector('.snav.act')?.dataset.tab || 'overview';
   switchTab(act);
+  if(_docSearchFocus){
+    const box = document.getElementById('tab-'+act);
+    const inp = box && box.querySelector('input[data-sf="'+_docSearchFocus+'"]');
+    if(inp){ inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+    _docSearchFocus = '';
+  }
 }
 
 const STATUS_META = {
@@ -895,6 +1118,202 @@ const STATUS_META = {
   bad: {lbl:'Quá hạn',       cls:'p-bad'},
 };
 
+/* ════════════════ TAB TỔNG QUAN ════════════════ */
+// Bảng màu thương hiệu Long Châu — dùng chung cho donut/legend/trend/badge để
+// đồng bộ 1 nơi (canvas Chart.js không đọc được biến CSS nên phải khai báo hex ở JS).
+const LC_COLORS = { ok:'#4CAF50', warn:'#FB8C00', late:'#2563EB', bad:'#DC2626', b5:'#8B5CF6' };
+let OVERVIEW_CHARTS = {};
+function destroyOverviewCharts(){ for(const k of Object.keys(OVERVIEW_CHARTS)){ try{ OVERVIEW_CHARTS[k].destroy(); }catch(e){} delete OVERVIEW_CHARTS[k]; } }
+
+function renderTopOverdue(A){
+  const cnt = {};
+  for(const p of A){ if(p.st!=='bad') continue; const k = p.person || '— Chưa gán'; cnt[k] = (cnt[k]||0)+1; }
+  const top = Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  if(!top.length) return '<div class="small mut">Không có hồ sơ quá hạn.</div>';
+  const max = top[0][1];
+  return top.map(([name,n])=>{
+    const initials = (name.startsWith('—') ? '?' : name).split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase() || '?';
+    return `<div class="ov-top-row">
+      <div class="ov-avatar">${esc(initials)}</div>
+      <div style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(name)}</div>
+      <div class="ov-top-bar-out"><div class="ov-top-bar-in" style="width:${Math.round(n/max*100)}%"></div></div>
+      <b style="width:26px;text-align:right">${n}</b>
+    </div>`;
+  }).join('');
+}
+
+function renderEmployeeCards(A, B){
+  const per = {};
+  for(const p of A){
+    // Giữ cả hồ sơ chưa gán được người (dùng đúng nhãn "— Chưa gán (lead check)"
+    // như renderFilterTableBlock() đang dùng, để bấm vào thẻ này lọc đúng đúng nhóm đó).
+    const key = p.person || '— Chưa gán (lead check)';
+    (per[key]=per[key]||{n:0,qh:0,st:0,b5:0});
+    per[key].n++; if(p.st==='bad') per[key].qh++; if(p.st==='warn') per[key].st++;
+  }
+  for(const p of B){
+    const key = p.name; if(!key) continue;
+    (per[key]=per[key]||{n:0,qh:0,st:0,b5:0});
+    per[key].n++; per[key].b5++;
+  }
+  const names = Object.keys(per).sort((a,b)=>per[b].n-per[a].n);
+  if(!names.length) return '<div class="small mut">Chưa có hồ sơ nào được gán.</div>';
+  return names.map(n=>{
+    const c = per[n];
+    const pct = c.n ? Math.round(c.qh/c.n*100) : 0;
+    const initials = n.startsWith('—') ? '?' : n.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const col = pct>=50 ? '#DC2626' : pct>=25 ? '#F59E0B' : '#22C55E'; /* hex trực tiếp (không dùng var()) để nối alpha "22" bên dưới hợp lệ */
+    return `<div class="ov-emp-card" style="cursor:pointer" onclick="focusPerson('${esc(n).replace(/'/g,"\\'")}')">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="ov-avatar" style="background:${col}22;color:${col}">${esc(initials)}</div>
+        <b style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(n)}</b>
+      </div>
+      <div class="small mut" style="margin-top:8px">${c.n} hồ sơ</div>
+      <div class="small" style="display:flex;gap:6px;flex-wrap:wrap">
+        <span class="${c.qh?'':'zero'}">${c.qh} quá hạn</span>
+        <span class="${c.st?'':'zero'}">${c.st} sắp trễ</span>
+        <span class="${c.b5?'':'zero'}">${c.b5} quên B5</span>
+      </div>
+      <div class="ov-emp-bar-out"><div class="ov-emp-bar-in" style="width:${pct}%;background:${col}"></div></div>
+      <div class="small mut" style="margin-top:3px">${pct}% quá hạn</div>
+    </div>`;
+  }).join('');
+}
+
+function drawOverviewDonut(cA, bCount){
+  const ctx = document.getElementById('ovDonut');
+  if(!ctx) return;
+  OVERVIEW_CHARTS.donut = new Chart(ctx, {
+    type:'doughnut',
+    data:{ labels:['Còn hạn','Sắp trễ','Trễ SLA','Quá hạn','Quên chuyển B5'],
+      datasets:[{ data:[cA.ok, cA.warn, cA.late, cA.bad, bCount],
+        backgroundColor:[LC_COLORS.ok, LC_COLORS.warn, LC_COLORS.late, LC_COLORS.bad, LC_COLORS.b5] }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}} }
+  });
+}
+
+function deltaHtml(diff, label){
+  if(diff===0) return `<span class="small mut">= không đổi ${label}</span>`;
+  const cls = diff>0 ? 'ov-delta-up' : 'ov-delta-down';
+  return `<span class="${cls}">${diff>0?'▲':'▼'} ${Math.abs(diff)} ${label}</span>`;
+}
+
+// Đọc v3/dailyStats (ghi bởi fbPushData → pushDailyStats mỗi lần admin đẩy dữ liệu)
+// để vẽ delta "so với hôm qua" trên thẻ số liệu + biểu đồ xu hướng 7 ngày.
+// Bắt đầu ghi từ ngày tính năng này lên, nên vài ngày đầu có thể thiếu dữ liệu —
+// hàm tự hiển thị ghi chú thay vì lỗi/NaN.
+async function loadOverviewTrendAndDelta(totalNow, quaHanNow){
+  try{
+    // Đọc snapshot chỉ để lấy delta "so với hôm qua" + đường "hồ sơ phát sinh".
+    // Đọc lỗi KHÔNG được chặn việc vẽ biểu đồ, vì đường "hồ sơ xử lý" tính từ
+    // DERIVED.done (dữ liệu đang có sẵn), không phụ thuộc Firebase.
+    let data = {};
+    try{
+      const snap = await FBDB.ref('v3/dailyStats').once('value');
+      if(snap.exists()) data = snap.val() || {};
+    }catch(e){ console.warn('Không đọc được v3/dailyStats:', e); }
+    const days = Object.keys(data).sort().slice(-7);
+    const todayStr = localDateStr(new Date());
+    const idxToday = days.indexOf(todayStr);
+    const prevDay = idxToday>0 ? days[idxToday-1] : (days.length && days[days.length-1]!==todayStr ? days[days.length-1] : null);
+    const prev = prevDay ? data[prevDay] : null;
+    const elAll = document.getElementById('ovDeltaAll');
+    const elQh = document.getElementById('ovDeltaQh');
+    // Chưa có dữ liệu hôm qua (vài ngày đầu dùng tính năng) -> ẩn hẳn thay vì hiện chữ nhắc,
+    // đỡ rối mắt (chỉ đổi hiển thị, không đổi cách tính delta).
+    if(prev && elAll){ elAll.style.display=''; elAll.innerHTML = deltaHtml(totalNow - ((prev.pendA||0)+(prev.pendB||0)), 'so với hôm qua'); }
+    else if(elAll) elAll.style.display='none';
+    if(prev && elQh){ elQh.style.display=''; elQh.innerHTML = deltaHtml(quaHanNow - (prev.quaHan||0), 'so với hôm qua'); }
+    else if(elQh) elQh.style.display='none';
+
+    // Khung 7 ngày CỐ ĐỊNH (hôm nay lùi về 6 ngày trước) — không phụ thuộc việc
+    // v3/dailyStats có bao nhiêu bản ghi.
+    const win = [];
+    for(let k=6;k>=0;k--){ const t=new Date(); t.setDate(t.getDate()-k); win.push(localDateStr(t)); }
+    // "Hồ sơ xử lý": đếm TRỰC TIẾP từ DERIVED.done theo ngày hoàn thành — có ngay lịch
+    // sử thật, số nguyên ngày trọn vẹn. Trước đây đọc doneToday từ snapshot ghi lúc
+    // ~08:10 sáng (script tự động chạy giờ đó) nên ngày nào cũng ~0.
+    const doneCnt = {};
+    for(const dRec of (DERIVED?.done || [])){ if(dRec.d) doneCnt[dRec.d] = (doneCnt[dRec.d]||0)+1; }
+    // "Hồ sơ phát sinh": lấy từ DERIVED.newByDay (tính lúc ingest theo cột "Ngày gửi",
+    // đẩy kèm trong stats nên còn nguyên khi dữ liệu về từ Firebase) — cùng cơ chế với
+    // đường "xử lý", có ngay lịch sử thật, không phải chờ snapshot tích luỹ.
+    const newCnt = (DERIVED && DERIVED.newByDay) || {};
+
+    const ctx = document.getElementById('ovTrend');
+    if(ctx){
+      const labels = win.map(d=>d.slice(5).replace('-','/'));
+      const doneArr = win.map(d=>doneCnt[d]||0);
+      const newArr = win.map(d=>newCnt[d]||0);
+      OVERVIEW_CHARTS.trend = new Chart(ctx, {
+        data:{ labels, datasets:[
+          {type:'line', label:'Hồ sơ xử lý', data:doneArr, borderColor:'#0033a0', backgroundColor:'#0033a0', tension:.3},
+          {type:'line', label:'Hồ sơ phát sinh', data:newArr, borderColor:'#4caf50', backgroundColor:'#4caf50', borderDash:[6,4], tension:.3},
+        ]},
+        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}}, scales:{y:{beginAtZero:true}} }
+      });
+    }
+  }catch(e){ console.warn('Không tải được v3/dailyStats:', e); }
+}
+
+function renderOverview(){
+  const el = document.getElementById('tab-overview');
+  if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
+  destroyOverviewCharts();
+  const A = DERIVED.pendA, B = DERIVED.pendB;
+  const {cA, bLateAll} = computeStatusBuckets();
+  const quaHan = cA.bad;
+
+  el.innerHTML = `
+    <div class="ov-stats">
+      <div class="ov-card"><div class="ov-ic" style="background:var(--blue-soft);color:var(--blue)">📄</div>
+        <div><div class="ov-lbl">Hồ sơ cần xử lý</div>
+          <div class="ov-num">${(A.length+B.length).toLocaleString('vi')}</div>
+          <div id="ovDeltaAll" class="small mut">–</div></div></div>
+      <div class="ov-card"><div class="ov-ic" style="background:var(--amber-soft);color:#8a6010">⏳</div>
+        <div><div class="ov-lbl">Chờ duyệt B4</div>
+          <div class="ov-num">${A.length.toLocaleString('vi')}</div>
+          <div class="small mut">${cA.warn} sắp trễ · ${cA.late} trễ SLA</div></div></div>
+      <div class="ov-card"><div class="ov-ic" style="background:var(--violet-soft);color:var(--violet)">🚚</div>
+        <div><div class="ov-lbl">Quên chuyển B5</div>
+          <div class="ov-num">${B.length.toLocaleString('vi')}</div>
+          <div class="small mut">${bLateAll} quá ${CFG.b5Days} ngày</div></div></div>
+      <div class="ov-card"><div class="ov-ic" style="background:var(--red-soft);color:var(--red)">⚠</div>
+        <div><div class="ov-lbl">Quá hạn</div>
+          <div class="ov-num">${quaHan.toLocaleString('vi')}</div>
+          <div id="ovDeltaQh" class="small mut">–</div></div></div>
+    </div>
+
+    <div class="ov-widgets">
+      <div class="ov-widget"><div class="ov-widget-title">Thống kê theo trạng thái</div>
+        <div class="ov-donut-wrap">
+          <div class="ov-legend">
+            <span><i style="background:${LC_COLORS.ok}"></i>Còn hạn: <b>${cA.ok}</b></span>
+            <span><i style="background:${LC_COLORS.warn}"></i>Sắp trễ: <b>${cA.warn}</b></span>
+            <span><i style="background:${LC_COLORS.late}"></i>Trễ SLA: <b>${cA.late}</b></span>
+            <span><i style="background:${LC_COLORS.bad}"></i>Quá hạn: <b>${cA.bad}</b></span>
+            <span><i style="background:${LC_COLORS.b5}"></i>Quên chuyển B5: <b>${B.length}</b></span>
+          </div>
+          <div class="ov-donut-box"><canvas id="ovDonut" role="img" aria-label="Tỷ lệ hồ sơ theo trạng thái">Biểu đồ tròn trạng thái hồ sơ.</canvas></div>
+        </div>
+      </div>
+      <div class="ov-widget"><div class="ov-widget-title">Xu hướng xử lý 7 ngày qua</div>
+        <div id="ovTrendBox" style="position:relative;height:172px"><canvas id="ovTrend" role="img" aria-label="Xu hướng số hồ sơ xử lý và phát sinh 7 ngày qua">Đang tải dữ liệu 7 ngày qua…</canvas></div>
+      </div>
+      <div class="ov-widget"><div class="ov-widget-title">Top nhân viên quá hạn nhiều nhất</div>
+        ${renderTopOverdue(A)}
+      </div>
+    </div>
+
+    <div class="card-title" style="margin-bottom:8px">Theo dõi theo nhân viên</div>
+    <div class="ov-emp-row">${renderEmployeeCards(A, B)}</div>
+
+    <div id="ovDetail">${renderFilterTableBlock(A, B)}</div>
+  `;
+  drawOverviewDonut(cA, B.length);
+  loadOverviewTrendAndDelta(A.length+B.length, quaHan);
+}
+
 /* ════════════════ TAB ĐỐC VIỆC ════════════════ */
 let docFilter = {person:'', group:'', type:'', status:'', searchMa:'', searchMuc:'', searchCreator:''};
 let _docSearchTimer = 0, _docSearchFocus = '';
@@ -902,8 +1321,81 @@ function docSearch(field, val){
   docFilter[field] = val;
   _docSearchFocus = field;
   clearTimeout(_docSearchTimer);
-  _docSearchTimer = setTimeout(()=>{ renderDoc(); }, 300);
+  _docSearchTimer = setTimeout(()=>{ applyDetailFilter(); }, 300);
 }
+// Re-render CHỈ khối bảng chi tiết ở cuối tab Tổng quan (#ovDetail) khi đổi bộ lọc —
+// không dựng lại biểu đồ, không đọc lại Firebase → lọc mượt, không nháy chart. Nếu
+// không tìm thấy khối (đang ở tab khác) thì fallback về renderAll().
+function applyDetailFilter(){
+  if(!DERIVED) return;
+  const box = document.getElementById('ovDetail');
+  if(!box){ renderAll(); return; }
+  box.innerHTML = renderFilterTableBlock(DERIVED.pendA, DERIVED.pendB);
+  if(_docSearchFocus){
+    const inp = box.querySelector('input[data-sf="'+_docSearchFocus+'"]');
+    if(inp){ inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
+    _docSearchFocus = '';
+  }
+}
+// Click thẻ nhân viên ở Tổng quan: lọc bảng chi tiết theo người đó + cuộn xuống bảng
+// (thay cho việc nhảy sang tab Theo dõi công việc như trước — tab đó nay đã gộp/ẩn).
+function focusPerson(n){
+  docSelPerson(n);
+  const d = document.getElementById('ovDetail');
+  if(d) d.scrollIntoView({behavior:'smooth', block:'start'});
+}
+// Bucket trạng thái toàn nhóm — dùng chung cho tab Đốc việc VÀ tab Tổng quan
+// (1 nơi tính duy nhất, tránh 2 tab hiện số lệch nhau).
+function computeStatusBuckets(){
+  if(!DERIVED) return {cA:{ok:0,warn:0,late:0,bad:0}, bLateAll:0};
+  const cA = {ok:0,warn:0,late:0,bad:0};
+  for(const p of DERIVED.pendA) cA[p.st]++;
+  const bLateAll = DERIVED.pendB.filter(p=>p.late).length;
+  return {cA, bLateAll};
+}
+
+// Dòng bảng cho 1 hồ sơ "Chờ B4" — dùng chung cho renderDoc() và renderOverview()
+function buildRowA(p, staffOpts, allGrps){
+  const g = grpById(p.group); const sm = STATUS_META[p.st];
+  const cur = p.person||'';
+  const isReassigned = !!REASSIGN[p.ma];
+  const isRegrouped = !!REGROUP[p.ma];
+  const selHtml = `<select class="reassign-sel${isReassigned?' reassigned':''}" onchange="fbReassign('${esc(p.ma)}',this.value)">
+    <option value=""${!cur?' selected':''}>— Chưa gán —</option>
+    ${staffOpts.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}
+  </select>`;
+  const grpSel = `<select class="reassign-sel${isRegrouped?' reassigned':''}" style="min-width:100px" onchange="fbRegroup('${esc(p.ma)}',this.value)">
+    ${allGrps.map(gx=>`<option value="${gx.id}"${gx.id===p.group?' selected':''}>${esc(gx.name)}</option>`).join('')}
+  </select>`;
+  return `<tr>
+    <td class="mono">${esc(p.ma)}</td>
+    <td><span class="pill p-grey">Chờ B4</span></td>
+    <td>${selHtml}</td>
+    <td>${grpSel}</td>
+    <td>${esc(String(p.muc).slice(0,90))}</td>
+    <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+    <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
+    <td class="num">${p.days.toFixed(0)}</td>
+    <td class="num mut">${p.sla}</td>
+    <td><span class="pill ${sm.cls}">${sm.lbl}</span></td>
+  </tr>`;
+}
+// Dòng bảng cho 1 hồ sơ "Quên B5" — dùng chung cho renderDoc() và renderOverview()
+function buildRowB(p){
+  return `<tr>
+    <td class="mono">${esc(p.ma)}</td>
+    <td><span class="pill p-b5">Quên B5</span></td>
+    <td>${esc(p.name)}</td>
+    <td><span class="grp-tag">${esc(grpById(p.group).name)}</span></td>
+    <td>${esc(String(p.muc).slice(0,90))}</td>
+    <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
+    <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
+    <td class="num">${p.days.toFixed(0)}</td>
+    <td class="num mut">${CFG.b5Days}</td>
+    <td>${p.late?'<span class="pill p-b5">Cần chuyển Chief</span>':'<span class="pill p-ok">Còn hạn</span>'}</td>
+  </tr>`;
+}
+
 function renderDoc(){
   const el = document.getElementById('tab-doc');
   if(!DERIVED){ el.innerHTML = '<div class="empty">Upload file báo cáo để bắt đầu.</div>'; return; }
@@ -943,7 +1435,32 @@ function renderDoc(){
     </div>`;
   }).join('');
 
-  // rows
+  // Thanh tổng quan cả nhóm (luôn tính trên toàn bộ, không phụ thuộc bộ lọc)
+  const {cA, bLateAll} = computeStatusBuckets();
+  const teamBar = `
+    <div class="card" style="border-top:3px solid var(--navy);display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:12px 18px">
+      <div><div class="small mut" style="text-transform:uppercase;letter-spacing:.05em">Cả nhóm cần xử lý</div>
+        <div style="font-family:Georgia,serif;font-size:26px;font-weight:700">${(A.length+B.length).toLocaleString('vi')} <span style="font-size:13px;font-weight:400;color:var(--ink-dim)">hồ sơ</span></div></div>
+      <div style="border-left:1px solid var(--line);padding-left:22px">
+        <div class="small mut">Chờ duyệt B4: <b style="color:var(--ink)">${A.length.toLocaleString('vi')}</b></div>
+        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
+          <span class="pill p-ok">${cA.ok} còn hạn</span>
+          <span class="pill p-warn">${cA.warn} sắp trễ</span>
+          <span class="pill p-late">${cA.late} trễ SLA</span>
+          <span class="pill p-bad">${cA.bad} quá hạn</span>
+        </div></div>
+      <div style="border-left:1px solid var(--line);padding-left:22px">
+        <div class="small mut">Đã B4, quên chuyển B5: <b style="color:var(--ink)">${B.length.toLocaleString('vi')}</b></div>
+        <div style="margin-top:4px"><span class="pill p-b5">${bLateAll} quá ${CFG.b5Days} ngày — cần chuyển Chief</span></div></div>
+    </div>`;
+
+  el.innerHTML = teamBar + `
+    <div class="cards-row">${cards || '<div class="empty">Không có hồ sơ chờ.</div>'}</div>` + renderFilterTableBlock(A, B);
+}
+
+// Khối "filters + bảng chi tiết" — dùng chung cho tab Đốc việc và tab Tổng quan
+// (đọc/ghi qua docFilter global, nên đổi filter ở tab này áp dụng cả tab kia).
+function renderFilterTableBlock(A, B){
   const sma = (docFilter.searchMa||'').toLowerCase();
   const smuc = (docFilter.searchMuc||'').toLowerCase();
   const scr = (docFilter.searchCreator||'').toLowerCase();
@@ -971,80 +1488,22 @@ function renderDoc(){
 
   const grpOpts = '<option value="">— Tất cả nhóm —</option>'+CFG.groups.map(g=>`<option value="${g.id}" ${docFilter.group===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
   const stOpts = '<option value="">— Trạng thái —</option>'+Object.entries(STATUS_META).map(([k,v])=>`<option value="${k}" ${docFilter.status===k?'selected':''}>${v.lbl}</option>`).join('');
-
   const staffOpts = (CFG.staff||[]).map(s=>s.name).sort();
   const allGrps = CFG.groups;
-  const trA = rowsA.map(p=>{
-    const g = grpById(p.group); const sm = STATUS_META[p.st];
-    const cur = p.person||'';
-    const isReassigned = !!REASSIGN[p.ma];
-    const isRegrouped = !!REGROUP[p.ma];
-    const selHtml = `<select class="reassign-sel${isReassigned?' reassigned':''}" onchange="fbReassign('${esc(p.ma)}',this.value)">
-      <option value=""${!cur?' selected':''}>— Chưa gán —</option>
-      ${staffOpts.map(n=>`<option value="${esc(n)}"${n===cur?' selected':''}>${esc(n)}</option>`).join('')}
-    </select>`;
-    const grpSel = `<select class="reassign-sel${isRegrouped?' reassigned':''}" style="min-width:100px" onchange="fbRegroup('${esc(p.ma)}',this.value)">
-      ${allGrps.map(gx=>`<option value="${gx.id}"${gx.id===p.group?' selected':''}>${esc(gx.name)}</option>`).join('')}
-    </select>`;
-    return `<tr>
-      <td class="mono">${esc(p.ma)}</td>
-      <td><span class="pill p-grey">Chờ B4</span></td>
-      <td>${selHtml}</td>
-      <td>${grpSel}</td>
-      <td>${esc(String(p.muc).slice(0,90))}</td>
-      <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
-      <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
-      <td class="num">${p.days.toFixed(0)}</td>
-      <td class="num mut">${p.sla}</td>
-      <td><span class="pill ${sm.cls}">${sm.lbl}</span></td>
-    </tr>`;
-  }).join('');
-  const trB = rowsB.map(p=>`<tr>
-      <td class="mono">${esc(p.ma)}</td>
-      <td><span class="pill p-b5">Quên B5</span></td>
-      <td>${esc(p.name)}</td>
-      <td><span class="grp-tag">${esc(grpById(p.group).name)}</span></td>
-      <td>${esc(String(p.muc).slice(0,90))}</td>
-      <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
-      <td class="small">${esc(String(p.creator||'').split('@')[0])}</td>
-      <td class="num">${p.days.toFixed(0)}</td>
-      <td class="num mut">${CFG.b5Days}</td>
-      <td>${p.late?'<span class="pill p-b5">Cần chuyển Chief</span>':'<span class="pill p-ok">Còn hạn</span>'}</td>
-    </tr>`).join('');
+  const trA = rowsA.map(p=>buildRowA(p, staffOpts, allGrps)).join('');
+  const trB = rowsB.map(p=>buildRowB(p)).join('');
 
-  // Thanh tổng quan cả nhóm (luôn tính trên toàn bộ, không phụ thuộc bộ lọc)
-  const cA = {ok:0,warn:0,late:0,bad:0};
-  for(const p of A) cA[p.st]++;
-  const bLateAll = B.filter(p=>p.late).length;
-  const teamBar = `
-    <div class="card" style="border-top:3px solid var(--navy);display:flex;gap:22px;flex-wrap:wrap;align-items:center;padding:12px 18px">
-      <div><div class="small mut" style="text-transform:uppercase;letter-spacing:.05em">Cả nhóm cần xử lý</div>
-        <div style="font-family:Georgia,serif;font-size:26px;font-weight:700">${(A.length+B.length).toLocaleString('vi')} <span style="font-size:13px;font-weight:400;color:var(--ink-dim)">hồ sơ</span></div></div>
-      <div style="border-left:1px solid var(--line);padding-left:22px">
-        <div class="small mut">Chờ duyệt B4: <b style="color:var(--ink)">${A.length.toLocaleString('vi')}</b></div>
-        <div style="margin-top:4px;display:flex;gap:6px;flex-wrap:wrap">
-          <span class="pill p-ok">${cA.ok} còn hạn</span>
-          <span class="pill p-warn">${cA.warn} sắp trễ</span>
-          <span class="pill p-late">${cA.late} trễ SLA</span>
-          <span class="pill p-bad">${cA.bad} quá hạn</span>
-        </div></div>
-      <div style="border-left:1px solid var(--line);padding-left:22px">
-        <div class="small mut">Đã B4, quên chuyển B5: <b style="color:var(--ink)">${B.length.toLocaleString('vi')}</b></div>
-        <div style="margin-top:4px"><span class="pill p-b5">${bLateAll} quá ${CFG.b5Days} ngày — cần chuyển Chief</span></div></div>
-    </div>`;
-
-  el.innerHTML = teamBar + `
-    <div class="cards-row">${cards || '<div class="empty">Không có hồ sơ chờ.</div>'}</div>
+  return `
     <div class="card">
       <div class="filters">
         <b style="font-size:13px">Chi tiết (${rowsA.length+rowsB.length} hồ sơ)</b>
-        <select onchange="docFilter.type=this.value;renderDoc()">
+        <select onchange="docFilter.type=this.value;applyDetailFilter()">
           <option value="">— Loại cảnh báo —</option>
           <option value="A" ${docFilter.type==='A'?'selected':''}>Chờ duyệt B4</option>
           <option value="B" ${docFilter.type==='B'?'selected':''}>Quên chuyển B5</option>
         </select>
-        <select onchange="docFilter.group=this.value;renderDoc()">${grpOpts}</select>
-        <select onchange="docFilter.status=this.value;renderDoc()">${stOpts}</select>
+        <select onchange="docFilter.group=this.value;applyDetailFilter()">${grpOpts}</select>
+        <select onchange="docFilter.status=this.value;applyDetailFilter()">${stOpts}</select>
         ${docFilter.person?`<span class="chip on" onclick="docSelPerson('')">${esc(docFilter.person)} ✕</span>`:''}
         <span style="flex:1"></span>
         <input type="text" placeholder="🔍 Mã ĐN" value="${esc(docFilter.searchMa)}" oninput="docSearch('searchMa',this.value)" data-sf="searchMa" style="width:90px;font-size:12px;padding:4px 8px;border:1px solid var(--line);border-radius:6px">
@@ -1057,13 +1516,8 @@ function renderDoc(){
         <tbody>${trA+trB || '<tr><td colspan="10" class="empty">Không có hồ sơ khớp bộ lọc.</td></tr>'}</tbody>
       </table></div>
     </div>`;
-  if(_docSearchFocus){
-    const inp = el.querySelector('input[data-sf="'+_docSearchFocus+'"]');
-    if(inp){ inp.focus(); inp.selectionStart = inp.selectionEnd = inp.value.length; }
-    _docSearchFocus = '';
-  }
 }
-function docSelPerson(n){ docFilter.person = (docFilter.person===n)?'':n; renderDoc(); }
+function docSelPerson(n){ docFilter.person = (docFilter.person===n)?'':n; applyDetailFilter(); }
 
 /* ════════════════ TAB KPI ════════════════ */
 let kpiMonths = null;  // null = tất cả
@@ -2232,6 +2686,8 @@ fbAuth.onAuthStateChanged(async user => {
   const info = FB_EMAIL_MAP[(user.email||'').toLowerCase()] || {name:(user.email||'').split('@')[0], role:'member'};
   USER_ROLE = info.role;
   applyRole();
+  const sbUser = document.getElementById('sidebarUser');
+  if(sbUser) sbUser.innerHTML = `<b style="color:#fff">${esc(info.name)}</b><br>${USER_ROLE==='admin'?'Quản trị hệ thống':'Thành viên'}`;
   barrier.style.display = 'none';
   await fbLoadCfg();
   await fbLoadData();
@@ -2248,7 +2704,7 @@ fbAuth.onAuthStateChanged(async user => {
 });
 
 function applyRole(){
-  const cfgTab = document.querySelector('.tab[data-tab="cfg"]');
+  const cfgTab = document.querySelector('.snav[data-tab="cfg"]');
   const dropZone = document.getElementById('drop');
   if(USER_ROLE !== 'admin'){
     if(cfgTab) cfgTab.style.display = 'none';
@@ -2315,10 +2771,16 @@ async function fbLoadData(){
       excludedRecv: d.stats?.excludedRecv || 0,
       total: d.stats?.total || 0,
       months: new Set(d.stats?.months || []),
+      newByDay: d.stats?.newByDay || {},   // số hồ sơ tạo theo ngày — cho biểu đồ xu hướng
     };
     FILES = [{name:'Firebase (cập nhật '+(d.updatedAt?new Date(d.updatedAt).toLocaleString('vi-VN'):'?')+(fromCache?' · từ cache':'')+')', rows: DERIVED.total}];
     dataSavedAt = d.updatedAt;
     renderFileBadges(); renderStatLine(); renderAll();
+    // Ghi snapshot hôm nay NGAY CẢ KHI dữ liệu đến từ Firebase (không phải vừa nạp Excel).
+    // Trước đây pushDailyStats() chỉ chạy sau khi ingest file, nên ngày nào chỉ mở xem là
+    // không có bản ghi nào → biểu đồ "Xu hướng 7 ngày" trống mãi. Fire-and-forget, tự có
+    // try/catch riêng, ghi đè cùng ngày nên không phình dữ liệu.
+    if(typeof USER_ROLE!=='undefined' && USER_ROLE==='admin') pushDailyStats();
     return true;
   }catch(e){ console.warn('Firebase data load failed:', e); return false; }
 }
@@ -2355,14 +2817,45 @@ async function fbPushData(){
     mergeReassign();
     await FBDB.ref('v3/kpiData').set({
       updatedAt: new Date().toISOString(),
-      stats: {total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months]},
+      stats: {total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months],
+              newByDay: DERIVED.newByDay || {}},
       pendA: DERIVED.pendA,
       pendB: DERIVED.pendB,
       done: DERIVED.done,
       doneTT: DERIVED.doneTT,
     });
+    await pushDailyStats();
     showToast('✓ Đã đẩy dữ liệu lên Firebase', 3000);
   }catch(e){ console.error('Firebase data push failed:', e); alert('Lỗi đẩy dữ liệu: '+e.message); }
+}
+
+// Ghi snapshot số liệu HÔM NAY vào v3/dailyStats/{YYYY-MM-DD} — dùng cho biểu đồ
+// "Xu hướng 7 ngày qua" ở tab Tổng quan. Ghi đè mỗi lần đẩy dữ liệu trong ngày —
+// lần đẩy cuối trong ngày là số cuối cùng của ngày đó. Rất nhẹ (vài chục byte/ngày),
+// không ảnh hưởng băng thông đã tối ưu. Lỗi ở đây KHÔNG chặn luồng đẩy kpiData chính.
+function localDateStr(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+async function pushDailyStats(){
+  try{
+    const todayStr = localDateStr(new Date());
+    const quaHan = DERIVED.pendA.filter(p=>p.st==='bad').length;
+    const quenB5Late = DERIVED.pendB.filter(p=>p.late).length;
+    const doneToday = DERIVED.done.filter(d=>d.d===todayStr).length;
+    const payload = {
+      pendA: DERIVED.pendA.length, pendB: DERIVED.pendB.length,
+      quaHan, quenB5Late, doneToday,
+    };
+    // Ghi chú: KHÔNG ghi "phatSinh" ở đây nữa. Số hồ sơ phát sinh theo ngày giờ nằm
+    // trong DERIVED.newByDay (tính lúc ingest, đẩy kèm v3/kpiData/stats) — 1 nguồn duy
+    // nhất, tránh 2 chỗ ghi lệch nhau. Node này chỉ còn giữ trạng thái điểm-thời-gian
+    // (pendA/pendB/quaHan/quenB5Late) để tính delta "so với hôm qua".
+    await FBDB.ref('v3/dailyStats/'+todayStr).update(payload);
+  }catch(e){
+    // KHÔNG nuốt lỗi im lặng nữa: trước đây chỉ console.warn nên khi Firebase Rules
+    // chặn ghi v3/dailyStats, biểu đồ 7 ngày trống mãi mà không ai biết lý do.
+    console.warn('Ghi dailyStats thất bại (không chặn luồng chính):', e);
+    if(typeof USER_ROLE!=='undefined' && USER_ROLE==='admin' && typeof showToast==='function')
+      showToast('⚠ Không ghi được lịch sử 7 ngày (v3/dailyStats): '+e.message+' — kiểm tra Firebase Rules', 8000);
+  }
 }
 
 // Override saveCfg to use Firebase
@@ -2423,7 +2916,7 @@ async function fbReassign(ma, person){
     console.error('Save reassign failed:', e);
     alert('Lỗi lưu chuyển người: '+e.message+'\n\nCó thể do Firebase Rules chưa cho phép write vào v3/reassign.');
   }
-  renderDoc();
+  renderAll();  // cập nhật cả thẻ nhân viên + donut + bảng chi tiết ở tab Tổng quan
 }
 async function fbRegroup(ma, groupId){
   const info = FB_EMAIL_MAP[(fbAuth.currentUser?.email||'').toLowerCase()] || {name:'?'};
@@ -2448,7 +2941,7 @@ async function fbRegroup(ma, groupId){
     if(REASSIGN[ma]) p.person = REASSIGN[ma].person;
     showToast('✓ Đã chuyển '+ma+' → '+g.name, 2000);
   }
-  renderDoc();
+  renderAll();  // cập nhật cả thẻ nhân viên + donut + bảng chi tiết ở tab Tổng quan
 }
 </script>
 </body>
