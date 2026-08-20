@@ -1122,6 +1122,9 @@ const STATUS_META = {
 // Bảng màu thương hiệu Long Châu — dùng chung cho donut/legend/trend/badge để
 // đồng bộ 1 nơi (canvas Chart.js không đọc được biến CSS nên phải khai báo hex ở JS).
 const LC_COLORS = { ok:'#4CAF50', warn:'#FB8C00', late:'#2563EB', bad:'#DC2626', b5:'#8B5CF6' };
+// Số ngày của biểu đồ "Xu hướng xử lý" — đổi 1 chỗ này là đổi cả tiêu đề + khung dữ liệu.
+// Giữ <= 60 để khớp giới hạn newByDay tính ở recompute() (đường "hồ sơ phát sinh").
+const TREND_DAYS = 30;
 let OVERVIEW_CHARTS = {};
 function destroyOverviewCharts(){ for(const k of Object.keys(OVERVIEW_CHARTS)){ try{ OVERVIEW_CHARTS[k].destroy(); }catch(e){} delete OVERVIEW_CHARTS[k]; } }
 
@@ -1226,10 +1229,10 @@ async function loadOverviewTrendAndDelta(totalNow, quaHanNow){
     if(prev && elQh){ elQh.style.display=''; elQh.innerHTML = deltaHtml(quaHanNow - (prev.quaHan||0), 'so với hôm qua'); }
     else if(elQh) elQh.style.display='none';
 
-    // Khung 7 ngày CỐ ĐỊNH (hôm nay lùi về 6 ngày trước) — không phụ thuộc việc
-    // v3/dailyStats có bao nhiêu bản ghi.
+    // Khung TREND_DAYS ngày CỐ ĐỊNH (hôm nay lùi về TREND_DAYS-1 ngày trước) — không
+    // phụ thuộc việc v3/dailyStats có bao nhiêu bản ghi.
     const win = [];
-    for(let k=6;k>=0;k--){ const t=new Date(); t.setDate(t.getDate()-k); win.push(localDateStr(t)); }
+    for(let k=TREND_DAYS-1;k>=0;k--){ const t=new Date(); t.setDate(t.getDate()-k); win.push(localDateStr(t)); }
     // "Hồ sơ xử lý": đếm TRỰC TIẾP từ DERIVED.done theo ngày hoàn thành — có ngay lịch
     // sử thật, số nguyên ngày trọn vẹn. Trước đây đọc doneToday từ snapshot ghi lúc
     // ~08:10 sáng (script tự động chạy giờ đó) nên ngày nào cũng ~0.
@@ -1245,12 +1248,17 @@ async function loadOverviewTrendAndDelta(totalNow, quaHanNow){
       const labels = win.map(d=>d.slice(5).replace('-','/'));
       const doneArr = win.map(d=>doneCnt[d]||0);
       const newArr = win.map(d=>newCnt[d]||0);
+      // Vẽ ĐỦ mọi điểm ngày; chỉ THƯA nhãn trục X (autoSkip, tối đa ~8 mốc, không xoay)
+      // để khung hẹp 20-30 ngày không bị chồng chữ. Điểm nhỏ gọn khi nhiều ngày.
+      const manyDays = win.length > 12;
       OVERVIEW_CHARTS.trend = new Chart(ctx, {
         data:{ labels, datasets:[
-          {type:'line', label:'Hồ sơ xử lý', data:doneArr, borderColor:'#0033a0', backgroundColor:'#0033a0', tension:.3},
-          {type:'line', label:'Hồ sơ phát sinh', data:newArr, borderColor:'#4caf50', backgroundColor:'#4caf50', borderDash:[6,4], tension:.3},
+          {type:'line', label:'Hồ sơ xử lý', data:doneArr, borderColor:'#0033a0', backgroundColor:'#0033a0', tension:.3, pointRadius: manyDays?2:3, pointHoverRadius:5, borderWidth:2},
+          {type:'line', label:'Hồ sơ phát sinh', data:newArr, borderColor:'#4caf50', backgroundColor:'#4caf50', borderDash:[6,4], tension:.3, pointRadius: manyDays?2:3, pointHoverRadius:5, borderWidth:2},
         ]},
-        options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}}, scales:{y:{beginAtZero:true}} }
+        options:{ responsive:true, maintainAspectRatio:false, interaction:{mode:'index',intersect:false},
+          plugins:{legend:{labels:{boxWidth:12,font:{size:11}}}},
+          scales:{ y:{beginAtZero:true}, x:{ticks:{autoSkip:true,maxTicksLimit:8,maxRotation:0,minRotation:0,font:{size:10}},grid:{display:false}} } }
       });
     }
   }catch(e){ console.warn('Không tải được v3/dailyStats:', e); }
@@ -1297,7 +1305,7 @@ function renderOverview(){
           <div class="ov-donut-box"><canvas id="ovDonut" role="img" aria-label="Tỷ lệ hồ sơ theo trạng thái">Biểu đồ tròn trạng thái hồ sơ.</canvas></div>
         </div>
       </div>
-      <div class="ov-widget"><div class="ov-widget-title">Xu hướng xử lý 7 ngày qua</div>
+      <div class="ov-widget"><div class="ov-widget-title">Xu hướng xử lý ${TREND_DAYS} ngày qua</div>
         <div id="ovTrendBox" style="position:relative;height:172px"><canvas id="ovTrend" role="img" aria-label="Xu hướng số hồ sơ xử lý và phát sinh 7 ngày qua">Đang tải dữ liệu 7 ngày qua…</canvas></div>
       </div>
       <div class="ov-widget"><div class="ov-widget-title">Top nhân viên quá hạn nhiều nhất</div>
@@ -2690,6 +2698,7 @@ fbAuth.onAuthStateChanged(async user => {
   if(sbUser) sbUser.innerHTML = `<b style="color:#fff">${esc(info.name)}</b><br>${USER_ROLE==='admin'?'Quản trị hệ thống':'Thành viên'}`;
   barrier.style.display = 'none';
   await fbLoadCfg();
+  await fbLoadManual();
   await fbLoadData();
   if(DERIVED && DERIVED.pendA){
     for(const p of DERIVED.pendA){
@@ -2745,6 +2754,32 @@ async function fbSaveCfg(){
   }catch(e){ console.error('Firebase config save failed:', e); alert('Lỗi lưu cấu hình: '+e.message); }
 }
 
+// KPI tổng hợp nhập tay (MANUAL) trước đây CHỈ lưu localStorage — mỗi máy tự thấy dữ
+// liệu của mình, người khác không thấy khi admin nhập/nạp template. Đồng bộ qua
+// v3/manualKpi giống đúng cách kpiConfig đang làm: chỉ admin ghi, mọi người đăng nhập
+// đều đọc được.
+async function fbLoadManual(){
+  try{
+    const snap = await FBDB.ref('v3/manualKpi').once('value');
+    if(snap.exists()){
+      MANUAL = snap.val();
+      try{ localStorage.setItem(MANUAL_LS_KEY, JSON.stringify(MANUAL)); }catch(e){}
+    } else if(USER_ROLE === 'admin' && Object.keys(MANUAL).length){
+      // Chưa có gì trên Firebase — đẩy dữ liệu cũ đang có trong localStorage của admin
+      // lên 1 lần để không mất công đã nhập từ trước khi có đồng bộ.
+      await FBDB.ref('v3/manualKpi').set(MANUAL);
+    }
+  }catch(e){
+    console.warn('Firebase manual KPI load failed, dùng localStorage:', e);
+  }
+}
+async function fbSaveManual(){
+  try{ localStorage.setItem(MANUAL_LS_KEY, JSON.stringify(MANUAL)); }catch(e){}
+  if(USER_ROLE !== 'admin') return;
+  try{ await FBDB.ref('v3/manualKpi').set(MANUAL); }
+  catch(e){ console.error('Firebase manual KPI save failed:', e); alert('Lỗi lưu KPI tổng hợp lên Firebase: '+e.message); }
+}
+
 async function fbLoadData(){
   try{
     // Bước 1: chỉ tải timestamp (rất nhẹ ~30 byte) để biết dữ liệu có đổi không
@@ -2763,11 +2798,18 @@ async function fbLoadData(){
       d = snap.val();
       try{ await idbSet('fbKpiData', {updatedAt: d.updatedAt || null, data: d}); }catch(e){}
     }
+    // done/doneTT giờ ghi dạng mảng-các-chunk (fbPushData chia nhỏ để tránh
+    // WRITE_TOO_BIG) — gộp phẳng lại khi đọc. Vẫn nhận đúng data CŨ (mảng phẳng, từ
+    // cache IndexedDB ghi trước khi có thay đổi này) để không vỡ khi vừa mới cập nhật.
+    function flattenChunks(v){
+      if(!Array.isArray(v)) return [];
+      return (v.length && Array.isArray(v[0])) ? v.flat() : v;
+    }
     DERIVED = {
       pendA: d.pendA || [],
       pendB: d.pendB || [],
-      done: d.done || [],
-      doneTT: d.doneTT || [],
+      done: flattenChunks(d.done),
+      doneTT: flattenChunks(d.doneTT),
       excludedRecv: d.stats?.excludedRecv || 0,
       total: d.stats?.total || 0,
       months: new Set(d.stats?.months || []),
@@ -2811,19 +2853,44 @@ function mergeReassign(){
   }
 }
 
+// Chia mảng lớn thành nhiều phần nhỏ (mỗi phần <= CHUNK bản ghi) để tránh lỗi Firebase
+// RTDB "WRITE_TOO_BIG" (1 lần ghi vượt kích thước cho phép) — done/doneTT đã tích luỹ
+// tới hàng chục nghìn bản ghi (~8MB tổng nếu ghi 1 lần), sẽ còn tiếp tục phình theo
+// thời gian nên phải chia nhỏ, không chỉ vá tạm cho đủ dùng hôm nay.
+function chunkArray(arr, size){
+  const out = [];
+  for(let i=0;i<arr.length;i+=size) out.push(arr.slice(i,i+size));
+  return out.length ? out : [[]];
+}
 async function fbPushData(){
   if(USER_ROLE !== 'admin' || !DERIVED) return;
   try{
     mergeReassign();
-    await FBDB.ref('v3/kpiData').set({
-      updatedAt: new Date().toISOString(),
-      stats: {total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months],
-              newByDay: DERIVED.newByDay || {}},
-      pendA: DERIVED.pendA,
-      pendB: DERIVED.pendB,
-      done: DERIVED.done,
-      doneTT: DERIVED.doneTT,
-    });
+    const CHUNK = 3000;
+    // Ghi từng phần bằng các request RIÊNG (không gộp 1 object khổng lồ) — mỗi request
+    // nhỏ hơn nhiều so với giới hạn 1 lần ghi. QUAN TRỌNG: phải ghi TỪNG CHUNK vào 1
+    // đường dẫn con riêng (done/0, done/1, ...) bằng .set() RIÊNG — nếu gộp cả mảng
+    // các-chunk vào 1 lệnh .set() duy nhất thì vẫn là 1 request khổng lồ như cũ, không
+    // giải quyết được gì (khoá numeric liên tiếp 0,1,2... Firebase tự đọc lại thành
+    // mảng, nên phía đọc không cần đổi gì).
+    await FBDB.ref('v3/kpiData/pendA').set(DERIVED.pendA);
+    await FBDB.ref('v3/kpiData/pendB').set(DERIVED.pendB);
+    // Xoá sạch chunk cũ trước khi ghi lại — nếu lần này ÍT chunk hơn lần trước (dữ liệu
+    // giảm), các chunk dư (VD done/11, done/12 của lần đẩy trước) sẽ còn sót lại và bị
+    // gộp nhầm vào khi đọc nếu không xoá trước. remove() không bị giới hạn WRITE_TOO_BIG
+    // (không cần truyền dữ liệu lên, chỉ ra lệnh xoá).
+    await FBDB.ref('v3/kpiData/done').remove();
+    await FBDB.ref('v3/kpiData/doneTT').remove();
+    const doneChunks = chunkArray(DERIVED.done, CHUNK);
+    for(let i=0;i<doneChunks.length;i++) await FBDB.ref('v3/kpiData/done/'+i).set(doneChunks[i]);
+    const doneTTChunks = chunkArray(DERIVED.doneTT, CHUNK);
+    for(let i=0;i<doneTTChunks.length;i++) await FBDB.ref('v3/kpiData/doneTT/'+i).set(doneTTChunks[i]);
+    await FBDB.ref('v3/kpiData/stats').set({total:DERIVED.total, excludedRecv:DERIVED.excludedRecv, months:[...DERIVED.months],
+              newByDay: DERIVED.newByDay || {}});
+    // updatedAt ghi SAU CÙNG: fbLoadData() dùng đúng field này để quyết định có cần tải
+    // lại hay không — ghi cuối cùng đảm bảo ai đọc thấy updatedAt mới thì các phần kia
+    // (pendA/pendB/done/doneTT/stats) chắc chắn đã ghi xong trước đó.
+    await FBDB.ref('v3/kpiData/updatedAt').set(new Date().toISOString());
     await pushDailyStats();
     showToast('✓ Đã đẩy dữ liệu lên Firebase', 3000);
   }catch(e){ console.error('Firebase data push failed:', e); alert('Lỗi đẩy dữ liệu: '+e.message); }
@@ -2860,6 +2927,9 @@ async function pushDailyStats(){
 
 // Override saveCfg to use Firebase
 saveCfg = fbSaveCfg;
+// Override saveManual để KPI tổng hợp nhập tay đồng bộ qua Firebase (v3/manualKpi)
+// thay vì chỉ nằm trong localStorage của riêng người nhập.
+saveManual = fbSaveManual;
 
 async function kpiDoLogin(){
   const email = document.getElementById('kpiEmail').value.trim();
