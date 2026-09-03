@@ -464,6 +464,10 @@ const DEFAULT_CFG = {
     {id:'t5', name:'Sáng kiến được áp dụng',             ts:0,  type:'manual', tv:1,    lower:false, bonus:true, unit:'sk'},
   ],
   kpiExclude: {},   // {acc: [groupId,...]} — nhóm loại khỏi % SLA của riêng người đó (vẫn đếm SL)
+  // Ngày nghỉ lễ (ngoài Thứ 7/CN đã loại sẵn) — loại khỏi tính SLA. Mỗi năm lịch nghỉ
+  // khác nhau (Tết, Quốc khánh...) nên để admin tự cấu hình trong tab Cấu hình, không
+  // hardcode trong code. {name, from:'YYYY-MM-DD', to:'YYYY-MM-DD' (để trống = 1 ngày)}
+  holidays: [],
   cfgVer: 16,
 };
 
@@ -884,12 +888,30 @@ function ingest(rows){
 }
 
 /* ════════════════ TÍNH TOÁN ════════════════ */
+// Bộ ngày nghỉ lễ (ngoài Thứ 7/CN) — cấu hình trong tab Cấu hình (CFG.holidays), đồng
+// bộ Firebase như mọi phần khác của CFG. Precompute thành Set 'YYYY-MM-DD' để tra cứu
+// nhanh trong workingDays() — hàm này bị gọi hàng chục nghìn lần mỗi lần recompute(),
+// không thể duyệt lại CFG.holidays mỗi lần gọi. rebuildHolidaySet() được gọi ở đầu
+// recompute() (nơi DUY NHẤT workingDays() được dùng) nên luôn đồng bộ với CFG hiện tại.
+let HOLIDAY_SET = new Set();
+function rebuildHolidaySet(){
+  HOLIDAY_SET = new Set();
+  for(const h of (CFG.holidays||[])){
+    if(!h || !h.from) continue;
+    const from = new Date(h.from+'T00:00:00');
+    const to = h.to ? new Date(h.to+'T00:00:00') : from;
+    if(isNaN(+from) || isNaN(+to) || to<from) continue;
+    let d = new Date(from), guard=0;
+    while(d<=to && guard<400){ HOLIDAY_SET.add(localDateStr(d)); d.setDate(d.getDate()+1); guard++; }
+  }
+}
 function workingDays(start, end){
   const WS=8.5, WE=18, WH=WE-WS;
   function hh(d){ return d.getHours()+d.getMinutes()/60+d.getSeconds()/3600; }
   function ymd(d){ return d.getFullYear()*10000+(d.getMonth()+1)*100+d.getDate(); }
-  function fwd(d){ while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()+1); return d; }
-  function bwd(d){ while(d.getDay()===0||d.getDay()===6) d.setDate(d.getDate()-1); return d; }
+  function isOff(d){ return d.getDay()===0 || d.getDay()===6 || HOLIDAY_SET.has(localDateStr(d)); }
+  function fwd(d){ while(isOff(d)) d.setDate(d.getDate()+1); return d; }
+  function bwd(d){ while(isOff(d)) d.setDate(d.getDate()-1); return d; }
   let s = fwd(new Date(start));
   let sh = hh(s);
   if(sh<WS) s.setHours(8,30,0,0);
@@ -902,7 +924,7 @@ function workingDays(start, end){
   if(ymd(s)===ymd(e)) return Math.round((hh(e)-hh(s))/WH*10)/10;
   let hours = WE - hh(s);
   let cur = new Date(s); cur.setDate(cur.getDate()+1);
-  while(ymd(cur)<ymd(e)){ if(cur.getDay()!==0&&cur.getDay()!==6) hours+=WH; cur.setDate(cur.getDate()+1); }
+  while(ymd(cur)<ymd(e)){ if(!isOff(cur)) hours+=WH; cur.setDate(cur.getDate()+1); }
   hours += hh(e) - WS;
   return Math.round(hours/WH*10)/10;
 }
@@ -957,6 +979,7 @@ function staffName(acc){
 }
 
 function recompute(){
+  rebuildHolidaySet(); // đồng bộ HOLIDAY_SET với CFG.holidays hiện tại trước khi workingDays() dùng
   const today = new Date();
   const D = {pendA:[], pendB:[], done:[], doneTT:[], excludedRecv:0, total:STORE.size, months:new Set()};
   for(const rec of STORE.values()){
@@ -2463,6 +2486,13 @@ function renderCfg(){
     <td><button class="rowbtn" onclick="CFG.staff.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
   </tr>`;}).join('');
 
+  const holidayRows = (CFG.holidays||[]).map((h,i)=>`<tr>
+    <td><input type="text" style="width:180px" value="${esc(h.name||'')}" placeholder="VD: Nghỉ lễ 2/9" onchange="CFG.holidays[${i}].name=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="date" value="${esc(h.from||'')}" onchange="CFG.holidays[${i}].from=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="date" value="${esc(h.to||h.from||'')}" onchange="CFG.holidays[${i}].to=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><button class="rowbtn" onclick="CFG.holidays.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
+  </tr>`).join('');
+
   el.innerHTML = `
   <div class="cfg-grid">
     <div class="card">
@@ -2478,6 +2508,13 @@ function renderCfg(){
       <table><thead><tr><th>Nhóm con</th><th>Người</th></tr></thead><tbody>${subRows}</tbody></table>
       <div class="small mut" style="margin-top:6px">CTP chung không rõ nhóm con sẽ thử khớp theo Đơn vị (Ban Kinh Doanh → Nhanntt, Marketing → Hientlt...; sửa trong JSON cấu hình nếu cần), còn lại rơi vào "Chưa gán — lead check".</div>
     </div>
+  </div>
+  <div class="card">
+    <div class="card-title">📅 Ngày nghỉ lễ (loại khỏi tính SLA) — <span class="mut">áp dụng cho MỌI tính toán ngày làm việc, ngoài Thứ 7/CN đã loại sẵn</span></div>
+    <table><thead><tr><th>Tên</th><th>Từ ngày</th><th>Đến ngày</th><th></th></tr></thead>
+      <tbody>${holidayRows || '<tr><td colspan="4" class="mut">Chưa có ngày nghỉ lễ nào.</td></tr>'}</tbody></table>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.holidays.push({name:'',from:'',to:''});saveCfg();renderCfg()">+ Thêm ngày nghỉ</button>
+    <div class="small mut" style="margin-top:8px">VD: Tết Dương lịch, Tết Âm lịch, 30/4-1/5, Quốc khánh 2/9... Để trống "Đến ngày" nếu chỉ nghỉ 1 ngày. Mỗi năm lịch nghỉ khác nhau nên cần tự cập nhật lại.</div>
   </div>
   <div class="card">
     <div class="card-title">🧭 Quy tắc gán người cho hồ sơ chờ B4 — duyệt từ trên xuống, khớp dòng đầu tiên</div>
