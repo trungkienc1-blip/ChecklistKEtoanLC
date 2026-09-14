@@ -364,6 +364,10 @@ const DEFAULT_CFG = {
     {group:'csvc',    region:'MD',   dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'MTAY', dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'HCM',  dvPat:'', textPat:'', person:'Khangth'},
+    // Đặt TRƯỚC các rule theo vùng bên dưới — rule vùng có textPat rỗng nên luôn khớp
+    // trước nếu đặt sau, khiến rule "hoàn tiền" này không bao giờ được áp dụng (chưa
+    // đến lượt vì matchAssignRules() quét theo thứ tự mảng, khớp dòng đầu tiên).
+    {group:'shop',    region:'',     dvPat:'', textPat:'hoàn tiền|hoan tien', person:'team AR'},
     {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
@@ -468,7 +472,7 @@ const DEFAULT_CFG = {
   // khác nhau (Tết, Quốc khánh...) nên để admin tự cấu hình trong tab Cấu hình, không
   // hardcode trong code. {name, from:'YYYY-MM-DD', to:'YYYY-MM-DD' (để trống = 1 ngày)}
   holidays: [],
-  cfgVer: 16,
+  cfgVer: 17, // 17: thêm rule "hoàn tiền" (CP Shop) -> team AR
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -534,6 +538,13 @@ function migrateCfg(){
         CFG.kpiExclude[acc] = obj;
       }
     }
+  }
+  // 7) cfgVer 17: rule "hoàn tiền" (CP Shop → team AR) phải đứng TRƯỚC các rule theo
+  //    vùng của Shop (textPat rỗng, luôn khớp trước) mới thực sự có tác dụng — bước 3
+  //    ở trên chỉ PUSH rule còn thiếu vào CUỐI mảng nên chưa đủ, phải tự đưa lên đầu.
+  if(old < 17){
+    const idx = CFG.assignRules.findIndex(r=>r.group==='shop' && r.person==='team AR' && r.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(r.textPat));
+    if(idx > 0){ const [rule] = CFG.assignRules.splice(idx,1); CFG.assignRules.unshift(rule); }
   }
   CFG.cfgVer = DEFAULT_CFG.cfgVer;
   try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); }catch(e){}
