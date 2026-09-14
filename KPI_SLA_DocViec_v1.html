@@ -367,7 +367,7 @@ const DEFAULT_CFG = {
     // Đặt TRƯỚC các rule theo vùng bên dưới — rule vùng có textPat rỗng nên luôn khớp
     // trước nếu đặt sau, khiến rule "hoàn tiền" này không bao giờ được áp dụng (chưa
     // đến lượt vì matchAssignRules() quét theo thứ tự mảng, khớp dòng đầu tiên).
-    {group:'shop',    region:'',     dvPat:'', textPat:'hoàn tiền|hoan tien', person:'team AR'},
+    {group:'shop',    region:'',     dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'},
     {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
@@ -472,7 +472,7 @@ const DEFAULT_CFG = {
   // khác nhau (Tết, Quốc khánh...) nên để admin tự cấu hình trong tab Cấu hình, không
   // hardcode trong code. {name, from:'YYYY-MM-DD', to:'YYYY-MM-DD' (để trống = 1 ngày)}
   holidays: [],
-  cfgVer: 17, // 17: thêm rule "hoàn tiền" (CP Shop) -> team AR
+  cfgVer: 19, // 17: rule "hoàn tiền" (CP Shop)->team AR | 18: +"khách hàng thanh toán thừa" | 19: +"xử lý theo calllog KNKH" (cùng rule)
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -545,6 +545,35 @@ function migrateCfg(){
   if(old < 17){
     const idx = CFG.assignRules.findIndex(r=>r.group==='shop' && r.person==='team AR' && r.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(r.textPat));
     if(idx > 0){ const [rule] = CFG.assignRules.splice(idx,1); CFG.assignRules.unshift(rule); }
+  }
+  // 8) cfgVer 18: mở rộng CHÍNH rule "hoàn tiền" (CP Shop → team AR) ở trên thêm cụm
+  //    "khách hàng thanh toán thừa" — sửa TRỰC TIẾP textPat rule đã có (không tạo rule
+  //    mới) để không phải lo lại vấn đề thứ tự ưu tiên, vì rule cũ đã đứng đầu từ bước 7.
+  if(old < 18){
+    const r = CFG.assignRules.find(x=>x.group==='shop' && x.person==='team AR' && x.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(x.textPat));
+    if(r){
+      if(!/thanh to[aá]n th[uừ]a/i.test(r.textPat)) r.textPat += '|khách hàng thanh toán thừa|khach hang thanh toan thua';
+      // Vì DEFAULT_CFG.textPat đã đổi (mở rộng thêm cụm mới), bước 3 ở trên (so khớp
+      // NGUYÊN VĂN textPat) coi đây là 1 rule "còn thiếu" khác và PUSH THÊM 1 bản trùng
+      // vào cuối mảng — dọn các bản trùng đó đi, chỉ giữ đúng 1 rule (đã sửa ở trên).
+      CFG.assignRules = CFG.assignRules.filter(x => x===r || !(x.group==='shop' && x.person==='team AR'));
+    } else {
+      // fallback: nếu rule gốc vì lý do gì đó không còn (VD admin đã xoá tay) — thêm
+      // mới và đưa lên đầu luôn để chắc chắn có tác dụng, giống bước 7.
+      CFG.assignRules.unshift({group:'shop', region:'', dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua', person:'team AR'});
+    }
+  }
+  // 9) cfgVer 19: mở rộng CHÍNH rule "hoàn tiền" (CP Shop → team AR) thêm cụm "xử lý
+  //    theo calllog KNKH" — cùng kỹ thuật như bước 8: sửa trực tiếp rule đã có, dọn
+  //    trùng do bước 3 tự push thêm vì textPat gốc đã đổi.
+  if(old < 19){
+    const r = CFG.assignRules.find(x=>x.group==='shop' && x.person==='team AR' && x.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(x.textPat));
+    if(r){
+      if(!/calllog/i.test(r.textPat)) r.textPat += '|xử lý theo calllog KNKH|xu ly theo calllog knkh';
+      CFG.assignRules = CFG.assignRules.filter(x => x===r || !(x.group==='shop' && x.person==='team AR'));
+    } else {
+      CFG.assignRules.unshift({group:'shop', region:'', dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'});
+    }
   }
   CFG.cfgVer = DEFAULT_CFG.cfgVer;
   try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); }catch(e){}
