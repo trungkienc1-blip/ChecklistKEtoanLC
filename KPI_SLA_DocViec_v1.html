@@ -332,6 +332,10 @@ const DEFAULT_CFG = {
     {id:'CHUNG',   name:'CTP chung',      person:''},
   ],
   assignRules: [
+    // group RỖNG = khớp MỌI nhóm, không quan tâm bộ phận nào tạo hồ sơ — phải đứng
+    // ĐẦU TIÊN toàn bộ mảng (matchAssignRules() quét theo thứ tự, khớp dòng đầu tiên;
+    // nếu đặt sau sẽ bị các rule theo nhóm/vùng khác (textPat rỗng) khớp trước mất).
+    {group:'',        region:'',     dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'},
     {group:'dien',    region:'HCM1', dvPat:'', textPat:'', person:'Huongdb'},
     {group:'dien',    region:'HCM2', dvPat:'', textPat:'', person:'Kietpt'},
     {group:'dien',    region:'MB',   dvPat:'', textPat:'', person:'Dinhvu'},
@@ -364,10 +368,6 @@ const DEFAULT_CFG = {
     {group:'csvc',    region:'MD',   dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'MTAY', dvPat:'', textPat:'', person:'Khangth'},
     {group:'csvc',    region:'HCM',  dvPat:'', textPat:'', person:'Khangth'},
-    // Đặt TRƯỚC các rule theo vùng bên dưới — rule vùng có textPat rỗng nên luôn khớp
-    // trước nếu đặt sau, khiến rule "hoàn tiền" này không bao giờ được áp dụng (chưa
-    // đến lượt vì matchAssignRules() quét theo thứ tự mảng, khớp dòng đầu tiên).
-    {group:'shop',    region:'',     dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'},
     {group:'shop',    region:'MD',   dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'MTAY', dvPat:'', textPat:'', person:'Lanntn'},
     {group:'shop',    region:'HNI',  dvPat:'', textPat:'', person:'Lanntn'},
@@ -472,7 +472,12 @@ const DEFAULT_CFG = {
   // khác nhau (Tết, Quốc khánh...) nên để admin tự cấu hình trong tab Cấu hình, không
   // hardcode trong code. {name, from:'YYYY-MM-DD', to:'YYYY-MM-DD' (để trống = 1 ngày)}
   holidays: [],
-  cfgVer: 19, // 17: rule "hoàn tiền" (CP Shop)->team AR | 18: +"khách hàng thanh toán thừa" | 19: +"xử lý theo calllog KNKH" (cùng rule)
+  // Điều chỉnh SLA tạm thời theo nhóm + khoảng thời gian (VD hỗ trợ nhân sự nghỉ thai
+  // sản, nghỉ dài ngày...). Chỉ những hồ sơ có NGÀY DUYỆT CẤP QUẢN LÝ (mgrDate) rơi vào
+  // khoảng [from,to] mới được cộng thêm addDays vào ngưỡng SLA (ov giữ nguyên, không dịch
+  // theo). {group, from:'YYYY-MM-DD', to:'YYYY-MM-DD', addDays, note}
+  slaAdjustments: [],
+  cfgVer: 21, // 17: rule "hoàn tiền" (CP Shop)->team AR | 18: +"khách hàng thanh toán thừa" | 19: +"xử lý theo calllog KNKH" | 20: bỏ giới hạn nhóm (mọi nhóm đều áp dụng) | 21: +slaAdjustments (điều chỉnh SLA theo khoảng thời gian)
 };
 
 let CFG = null, cfgIsDefault = false;
@@ -574,6 +579,29 @@ function migrateCfg(){
     } else {
       CFG.assignRules.unshift({group:'shop', region:'', dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'});
     }
+  }
+  // 10) cfgVer 20: rule "hoàn tiền/thanh toán thừa/calllog KNKH" → team AR trước đây
+  //     giới hạn group:'shop' — phát hiện nhiều hồ sơ cùng bản chất (Phòng Kế toán,
+  //     Phòng Giải quyết khiếu nại...) bị phân vào nhóm "khac" nên rule không chạy tới.
+  //     Bỏ giới hạn nhóm (group:'') để áp dụng bất kể bộ phận nào tạo hồ sơ, và đưa lên
+  //     vị trí ĐẦU TIÊN của TOÀN BỘ mảng (không chỉ trong nhóm shop nữa).
+  if(old < 20){
+    const idx = CFG.assignRules.findIndex(x=>x.person==='team AR' && x.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(x.textPat));
+    let rule;
+    if(idx >= 0){
+      [rule] = CFG.assignRules.splice(idx,1);
+      rule.group = '';
+    } else {
+      rule = {group:'', region:'', dvPat:'', textPat:'hoàn tiền|hoan tien|khách hàng thanh toán thừa|khach hang thanh toan thua|xử lý theo calllog KNKH|xu ly theo calllog knkh', person:'team AR'};
+    }
+    // dọn mọi bản trùng khác (VD do bước 3 tự push thêm bản group:'' vì key đổi khi group đổi)
+    CFG.assignRules = CFG.assignRules.filter(x => !(x.person==='team AR' && x.textPat && /ho[aà]n ti[eề]n|hoan tien/i.test(x.textPat)));
+    CFG.assignRules.unshift(rule);
+  }
+  // 11) cfgVer 21: thêm mảng slaAdjustments (điều chỉnh SLA tạm thời theo nhóm +
+  //     khoảng thời gian) — config cũ chưa có field này, khởi tạo rỗng nếu thiếu.
+  if(old < 21){
+    if(!Array.isArray(CFG.slaAdjustments)) CFG.slaAdjustments = [];
   }
   CFG.cfgVer = DEFAULT_CFG.cfgVer;
   try{ localStorage.setItem(LS_KEY, JSON.stringify(CFG)); }catch(e){}
@@ -693,7 +721,8 @@ function detectRegion(muc, dv, creator, group){
 function matchAssignRules(rec){
   const cr = String(rec.creator||'').split('@')[0].trim().toLowerCase();
   const check = r => {
-    if(r.group !== rec.group) return false;
+    // group rỗng = khớp MỌI nhóm (mirror đúng quy ước region rỗng = mọi vùng ở dòng dưới)
+    if(r.group && r.group !== rec.group) return false;
     if(r.region && r.region !== rec.region) return false;
     try{ if(r.creatorPat && !new RegExp(r.creatorPat,'i').test(cr)) return false; }catch(e){ return false; }
     try{ if(r.dvPat && !new RegExp(r.dvPat,'i').test(rec.dv)) return false; }catch(e){ return false; }
@@ -969,6 +998,22 @@ function workingDays(start, end){
   return Math.round(hours/WH*10)/10;
 }
 function grpById(id){ return CFG.groups.find(g=>g.id===id) || DEFAULT_CFG.groups.find(g=>g.id===id) || {id:id, name:id, sla:5, ov:7}; }
+// Điều chỉnh SLA tạm thời (CFG.slaAdjustments) theo nhóm + khoảng thời gian, áp dụng
+// theo NGÀY DUYỆT CẤP QUẢN LÝ (mgrDate) của hồ sơ — thời điểm đồng hồ SLA bắt đầu chạy.
+// Ngưỡng quá hạn nặng (ov) KHÔNG dịch theo, chỉ ngưỡng SLA (trễ) được cộng thêm.
+function slaAdjustDays(groupId, dateVal){
+  if(!dateVal || !(CFG.slaAdjustments||[]).length) return 0;
+  const d = (dateVal instanceof Date) ? localDateStr(dateVal) : String(dateVal).slice(0,10);
+  let add = 0;
+  for(const a of CFG.slaAdjustments){
+    if(!a || a.group !== groupId) continue;
+    if(a.from && d < a.from) continue;
+    if(a.to && d > a.to) continue;
+    add += Number(a.addDays) || 0;
+  }
+  return add;
+}
+function effSla(g, mgrDate){ return (g.sla||0) + slaAdjustDays(g.id, mgrDate); }
 // kpiExclude: {acc: {gid: ['YYYY-MM',...] | 'all'}} — loại nhóm khỏi %SLA THEO TỪNG THÁNG.
 // 'all' = tương thích dữ liệu cũ (loại toàn thời gian). Không truyền month = "có bị loại tháng nào không".
 function exclMonths(acc, gid){
@@ -1047,10 +1092,11 @@ function recompute(){
 
     if(mgrDate && !rcv){
       const days = workingDays(mgrDate, today);
+      const sla = effSla(g, mgrDate);
       let st;
-      if(days > g.ov) st = 'bad'; else if(days > g.sla) st = 'late';
-      else if(days >= g.sla*CFG.warnPct/100) st = 'warn'; else st = 'ok';
-      D.pendA.push({ma:rec.ma, group:rec.group, sub:rec.sub, region:rec.region, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, mgrDate:mgrDate.toISOString(), days, st, person: assignPerson(rec), sla:g.sla, ov:g.ov});
+      if(days > g.ov) st = 'bad'; else if(days > sla) st = 'late';
+      else if(days >= sla*CFG.warnPct/100) st = 'warn'; else st = 'ok';
+      D.pendA.push({ma:rec.ma, group:rec.group, sub:rec.sub, region:rec.region, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, mgrDate:mgrDate.toISOString(), days, st, person: assignPerson(rec), sla, ov:g.ov});
     }
     if(rcv){
       if(CFG.excludeRecv.includes(rcv.acc)){ D.excludedRecv++; continue; }
@@ -1074,7 +1120,8 @@ function recompute(){
           const dStr = localDateStr(rcv.date);
           const month = dStr.slice(0,7);
           D.months.add(month);
-          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, days, acc:rcv.acc, month, d:dStr, ok: days <= g.sla, over: days > g.ov, sla:g.sla});
+          const sla = effSla(g, mgrDate);
+          D.done.push({ma:rec.ma, group:rec.group, muc:rec.muc, days, acc:rcv.acc, month, d:dStr, ok: days <= sla, over: days > g.ov, sla});
         }
       }
     }
@@ -1100,8 +1147,8 @@ function recompute(){
 function refreshSLA(){
   if(!DERIVED || !DERIVED.pendA) return;
   for(const p of DERIVED.pendA){
-    if(REGROUP[p.ma]){ const g = grpById(REGROUP[p.ma].group); p.group = g.id; p.sla = g.sla; p.ov = g.ov; }
-    else { const g = grpById(p.group); p.sla = g.sla; p.ov = g.ov; }
+    if(REGROUP[p.ma]){ const g = grpById(REGROUP[p.ma].group); p.group = g.id; p.sla = effSla(g, p.mgrDate); p.ov = g.ov; }
+    else { const g = grpById(p.group); p.sla = effSla(g, p.mgrDate); p.ov = g.ov; }
     let st; if(p.days > p.ov) st='bad'; else if(p.days > p.sla) st='late';
     else if(p.days >= p.sla*CFG.warnPct/100) st='warn'; else st='ok';
     p.st = st;
@@ -2533,6 +2580,16 @@ function renderCfg(){
     <td><button class="rowbtn" onclick="CFG.holidays.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
   </tr>`).join('');
 
+  const slaAdjGrpSel = i => CFG.groups.map(g=>`<option value="${g.id}" ${(CFG.slaAdjustments[i].group||'')===g.id?'selected':''}>${esc(g.name)}</option>`).join('');
+  const slaAdjRows = (CFG.slaAdjustments||[]).map((a,i)=>`<tr>
+    <td><select onchange="CFG.slaAdjustments[${i}].group=this.value;saveCfg();recompute();refreshSLA()">${slaAdjGrpSel(i)}</select></td>
+    <td><input type="date" value="${esc(a.from||'')}" onchange="CFG.slaAdjustments[${i}].from=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="date" value="${esc(a.to||'')}" onchange="CFG.slaAdjustments[${i}].to=this.value;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="number" step="0.5" style="width:70px" value="${a.addDays||0}" onchange="CFG.slaAdjustments[${i}].addDays=parseFloat(this.value)||0;saveCfg();recompute();refreshSLA()"></td>
+    <td><input type="text" style="width:220px" value="${esc(a.note||'')}" placeholder="VD: Hỗ trợ 1 bạn nghỉ thai sản" onchange="CFG.slaAdjustments[${i}].note=this.value;saveCfg()"></td>
+    <td><button class="rowbtn" onclick="CFG.slaAdjustments.splice(${i},1);saveCfg();recompute();refreshSLA();renderCfg()">✕</button></td>
+  </tr>`).join('');
+
   el.innerHTML = `
   <div class="cfg-grid">
     <div class="card">
@@ -2555,6 +2612,13 @@ function renderCfg(){
       <tbody>${holidayRows || '<tr><td colspan="4" class="mut">Chưa có ngày nghỉ lễ nào.</td></tr>'}</tbody></table>
     <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.holidays.push({name:'',from:'',to:''});saveCfg();renderCfg()">+ Thêm ngày nghỉ</button>
     <div class="small mut" style="margin-top:8px">VD: Tết Dương lịch, Tết Âm lịch, 30/4-1/5, Quốc khánh 2/9... Để trống "Đến ngày" nếu chỉ nghỉ 1 ngày. Mỗi năm lịch nghỉ khác nhau nên cần tự cập nhật lại.</div>
+  </div>
+  <div class="card">
+    <div class="card-title">⏱️ Điều chỉnh SLA tạm thời theo khoảng thời gian — <span class="mut">VD hỗ trợ nhân sự nghỉ thai sản, nghỉ dài ngày...</span></div>
+    <table><thead><tr><th>Nhóm</th><th>Từ ngày</th><th>Đến ngày</th><th>+Số ngày SLA</th><th>Ghi chú</th><th></th></tr></thead>
+      <tbody>${slaAdjRows || '<tr><td colspan="6" class="mut">Chưa có điều chỉnh nào.</td></tr>'}</tbody></table>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="CFG.slaAdjustments.push({group:CFG.groups[0]?.id||'',from:'',to:'',addDays:1,note:''});saveCfg();recompute();refreshSLA();renderCfg()">+ Thêm điều chỉnh</button>
+    <div class="small mut" style="margin-top:8px">Áp dụng theo <b>ngày duyệt cấp quản lý (bắt đầu tính SLA)</b> của hồ sơ: hồ sơ nào có ngày duyệt QL rơi vào khoảng [Từ ngày, Đến ngày] mới được cộng thêm số ngày SLA của nhóm tương ứng. Chỉ nới ngưỡng "trễ", ngưỡng "quá hạn nặng" giữ nguyên. Nhiều điều chỉnh trùng nhóm/thời gian sẽ được cộng dồn.</div>
   </div>
   <div class="card">
     <div class="card-title">🧭 Quy tắc gán người cho hồ sơ chờ B4 — duyệt từ trên xuống, khớp dòng đầu tiên</div>
@@ -2781,7 +2845,7 @@ fbAuth.onAuthStateChanged(async user => {
     for(const p of DERIVED.pendA){
       p.person = assignPerson(p);
       const g = grpById(p.group);
-      if(g){ p.sla = g.sla; p.ov = g.ov; }
+      if(g){ p.sla = effSla(g, p.mgrDate); p.ov = g.ov; }
     }
   }
   await fbLoadReassign();
@@ -2910,9 +2974,9 @@ function mergeReassign(){
   for(const p of DERIVED.pendA){
     if(REGROUP[p.ma]){
       const g = grpById(REGROUP[p.ma].group);
-      p.group = g.id; p.sla = g.sla; p.ov = g.ov;
-      let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
-      else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+      p.group = g.id; p.sla = effSla(g, p.mgrDate); p.ov = g.ov;
+      let st; if(p.days > g.ov) st='bad'; else if(p.days > p.sla) st='late';
+      else if(p.days >= p.sla*CFG.warnPct/100) st='warn'; else st='ok';
       p.st = st;
       p.person = assignPerson(p);
     }
@@ -3041,9 +3105,9 @@ async function fbLoadReassign(){
     for(const p of DERIVED.pendA){
       if(REGROUP[p.ma]){
         const g = grpById(REGROUP[p.ma].group);
-        p.group = g.id; p.sla = g.sla; p.ov = g.ov;
-        let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
-        else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+        p.group = g.id; p.sla = effSla(g, p.mgrDate); p.ov = g.ov;
+        let st; if(p.days > g.ov) st='bad'; else if(p.days > p.sla) st='late';
+        else if(p.days >= p.sla*CFG.warnPct/100) st='warn'; else st='ok';
         p.st = st;
         p.person = assignPerson(p);
       }
@@ -3080,9 +3144,9 @@ async function fbRegroup(ma, groupId){
   const p = DERIVED.pendA.find(x=>x.ma===ma);
   if(p){
     const g = grpById(groupId || classify(p.muc, p.dv).group);
-    p.group = g.id; p.sla = g.sla; p.ov = g.ov;
-    let st; if(p.days > g.ov) st='bad'; else if(p.days > g.sla) st='late';
-    else if(p.days >= g.sla*CFG.warnPct/100) st='warn'; else st='ok';
+    p.group = g.id; p.sla = effSla(g, p.mgrDate); p.ov = g.ov;
+    let st; if(p.days > g.ov) st='bad'; else if(p.days > p.sla) st='late';
+    else if(p.days >= p.sla*CFG.warnPct/100) st='warn'; else st='ok';
     p.st = st;
     p.person = assignPerson(p);
     if(REASSIGN[ma]) p.person = REASSIGN[ma].person;
