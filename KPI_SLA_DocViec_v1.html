@@ -1154,7 +1154,7 @@ function recompute(){
       // flowDone()===null (không đọc được field) thì bỏ qua, không báo nhầm.
       if(rec.tien && flowDone(rec.flow)===false){
         const days = workingDays(rcv.date, today);
-        D.pendC.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, flow:rec.flow, late: days > CFG.ttDays});
+        D.pendC.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, flow:rec.flow, person: assignPerson(rec), late: days > CFG.ttDays});
       }
       if(mgrDate && rcv.date >= mgrDate){
         const days = workingDays(mgrDate, rcv.date);
@@ -1572,7 +1572,7 @@ function buildRowC(p){
   return `<tr>
     <td class="mono">${esc(p.ma)}</td>
     <td><span class="pill p-bad">Quên đẩy lệnh</span></td>
-    <td class="small mut">Team TT</td>
+    <td>${esc(p.person||'— Chưa gán (lead check)')}</td>
     <td><span class="grp-tag">${esc(grpById(p.group).name)}</span></td>
     <td>${esc(String(p.muc).slice(0,90))}</td>
     <td class="small mut">${esc(String(p.dv).split('.').slice(-1)[0].slice(0,45))}</td>
@@ -1674,7 +1674,8 @@ function renderFilterTableBlock(A, B, C){
     return true;
   }).sort((x,y)=>y.days-x.days);
   const rowsC = C.filter(p=>{
-    if(docFilter.person) return false; // không gán cho 1 người cụ thể (việc chung Team TT)
+    const key = p.person || '— Chưa gán (lead check)';
+    if(docFilter.person && key!==docFilter.person) return false;
     if(docFilter.group && p.group!==docFilter.group) return false;
     if(docFilter.type && docFilter.type!=='C') return false;
     if(docFilter.status) return false;
@@ -2807,7 +2808,7 @@ async function exportDoc(){
     if(p.late) r.eachCell(c=>{c.fill=XLS_FILL.b5;});
   }
   for(const p of [...(DERIVED.pendC||[])].sort((x,y)=>y.days-x.days)){
-    const r = ws.addRow([p.ma, 'Quên đẩy lệnh (B7/B8)', 'Team TT', grpById(p.group).name, p.muc, p.dv, p.creator, p.tien, Math.round(p.days), CFG.ttDays, p.late?('Chưa xong ('+(p.flow||'?')+')'):'Còn hạn']);
+    const r = ws.addRow([p.ma, 'Quên đẩy lệnh (B7/B8)', p.person||'— Chưa gán (lead check)', grpById(p.group).name, p.muc, p.dv, p.creator, p.tien, Math.round(p.days), CFG.ttDays, p.late?('Chưa xong ('+(p.flow||'?')+')'):'Còn hạn']);
     if(p.late) r.eachCell(c=>{c.fill=XLS_FILL.bad;});
   }
   ws.columns.forEach((col,i)=>{ col.width = [12,20,18,18,50,32,18,13,9,8,16][i]||14; });
