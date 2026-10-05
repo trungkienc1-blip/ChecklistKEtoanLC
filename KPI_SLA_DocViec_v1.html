@@ -1110,8 +1110,7 @@ function recompute(){
     const ap = rec.steps.filter(s=>s.status==='APPROVED');
     const mgrs = ap.filter(s=>s.role==='MANAGER');
     const rcvs = ap.filter(s=>s.role==='RECEIVER');
-    const mgrStep = mgrs.length ? mgrs.reduce((a,b)=>a.date>b.date?a:b) : null;
-    const mgrDate = mgrStep ? new Date(mgrStep.date) : null;
+    const mgrDate = mgrs.length ? new Date(Math.max(...mgrs.map(s=>s.date))) : null;
     const rcv = rcvs.length ? rcvs.reduce((a,b)=>a.date<b.date?a:b) : null;
     const g = grpById(rec.group);
 
@@ -1155,10 +1154,9 @@ function recompute(){
       // flowDone()===null (không đọc được field) thì bỏ qua, không báo nhầm.
       if(rec.tien && flowDone(rec.flow)===false){
         const days = workingDays(rcv.date, today);
-        // Người phụ trách = kế toán ĐÃ DUYỆT B4 thật sự (giống cách "Quên chuyển B5"
-        // dùng người đã duyệt B5 thật — rcv.acc) — KHÔNG dùng assignPerson() (rule gán
-        // theo nhóm, chỉ áp dụng cho hồ sơ CHƯA có ai xử lý ở "Chờ duyệt B4").
-        const person = mgrStep ? (staffName(mgrStep.acc)||mgrStep.acc) : null;
+        // Người phụ trách = kế toán ĐÃ DUYỆT B4 = bước RECEIVER (rcv.acc) — đúng như
+        // "Quên chuyển B5" (name) và KPI SLA (acc). Manager là B3, không phải B4.
+        const person = staffName(rcv.acc)||rcv.acc;
         D.pendC.push({ma:rec.ma, group:rec.group, muc:rec.muc, dv:rec.dv, creator:rec.creator, tien:rec.tien, rcvDate:rcv.date.toISOString(), days, flow:rec.flow, person, late: days > CFG.ttDays});
       }
       if(mgrDate && rcv.date >= mgrDate){
